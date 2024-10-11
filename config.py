@@ -1,15 +1,6 @@
-#WIFI_SSID = "sensori"
-#WIFI_PASSWORD = "sensori2019"
-#WIFI_SSID = "Galaxy A54 5G 1BFE"
-#WIFI_PASSWORD = "7y3fbbivw6db26y"
-#WIFI_SSID = "RedmiSeb"
-#WIFI_PASSWORD = "pippo2503"
-#WIFI_SSID = "WebPocket-E280"
-#WIFI_PASSWORD = "dorabino.7468!"
-#WIFI_SSID = "casafleri"
-#WIFI_PASSWORD = "fabseb050770250368120110$"
-WIFI_SSID = "D-Link-6A30CC"
-WIFI_PASSWORD = "FabSeb050770250368120110"
+
+WIFI_SSID = xxxxxx"
+WIFI_PASSWORD = "yyyyyy"
 MQTT_CLIENT_ID = "radar-01"
 # The main broker is the preferred broker
 # The backup broker is choosen only when the main broker is unavailable
