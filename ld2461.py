@@ -52,6 +52,10 @@ class LD2461:
             0,
             0
         ]
+        self.baudrate = 9600
+        self.candidate_brate = 9600
+        self.tx_pin = tx_pin
+        self.rx_pin = rx_pin
 
     def setup(self):
         time.sleep_ms(1000)
@@ -105,8 +109,11 @@ class LD2461:
                 ok = frame_data[2:3]
                 self.callback(command, ok , 1)
             if command == SET_BAUDRATE:
-                ok = frame_data[2:3]
-                self.callback(command, ok , 1)
+                ok = frame_data[3] # offset = 3 for ack
+                if ok:
+                    self.baudrate = self.candidate_brate
+                    self.uart = UART(1, baudrate=self.baudrate, tx=Pin(self.tx_pin), rx=Pin(self.rx_pin))
+                self.callback(command, self.baudrate , 2)
             if command == SET_REPORTING:
                 ok = frame_data[2:3]
                 self.callback(command, ok , 1)
@@ -116,6 +123,9 @@ class LD2461:
         self.serial_data['buffer'][:] = b''  # Svuota il bytearray mantenendo lo stesso riferimento
         self.serial_data['size'] = 0
         self.serial_data['frame_start'] = 0
+        
+    def get_baudrate(self, frame_data):
+        return self.baudrate
 
     def process_regions(self, frame_data):# 0x06
         # Logica per processare i dati in risposta delle regioni 
@@ -326,8 +336,11 @@ class LD2461:
     def read_all_info(self, regions):
         self.regions = regions
         self.get_version()
-        self.get_regions()
+        time.sleep(0.05)
+        self.get_regions()# sovrascrive tutti i campi di regions tranne enabled!
+        time.sleep(0.05)
         self.get_reporting()
+        time.sleep(0.05)
 
     def get_version(self):
         byte_sequence =  b'\x01'
@@ -342,12 +355,14 @@ class LD2461:
         self.send_command(GET_REGIONS, byte_sequence)
 
     def set_baud_rate(self, baud_rate=256000):
-        possible_baud_rates = [19200, 38400, 57600, 115200, 256000]
+        print("brate: ", baud_rate)
+        possible_baud_rates = [9600, 19200, 38400, 57600, 115200, 256000]
         if baud_rate not in possible_baud_rates:
-            raise ValueError('The baud rate must be one of the following: 19200, 38400, 57600, 115200, 256000')   
+            raise ValueError('The baud rate must be one of the following: 9600, 19200, 38400, 57600, 115200, 256000')   
         
         #baudrate_index = possible_baud_rates.index(baud_rate)
         byte_sequence = baud_rate.to_bytes(3, 'big')
+        self.candidate_brate = baud_rate
         self.send_command(SET_BAUDRATE, byte_sequence)
 
     def set_region(self, v):# 0x04
