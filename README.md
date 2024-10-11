@@ -1,7 +1,7 @@
 # esp32-LD2461
 A radar IoT device built with a Hi-Link HLK-LD2461 board coupled with a LiteOn LTR329 enviroment sensor docked in an ESP32 S3 board implemented with Micropython.
 
-For the first boot from a device set manually the serial speed in config.json. The default speed is 9600 baud, but you can set this directily from the file config.json to any different one.
+For the first boot from a device, please set manually the serial speed in config.json. The default speed is 9600 baud, but you can set this directily from the file config.json to any different one.
 
 The following is an example of a complete config.json file:
 ```Json
