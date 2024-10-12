@@ -167,8 +167,10 @@ const commandMap = {
 		radar: (value) =>{
 			console.log('radar ', value);
 			let rd = boardData[currBoardId].radarData;
-			rd.x = roundArrTo(getFieldIfExists(value,'x'), 2, 1000);
-			rd.y = roundArrTo(getFieldIfExists(value,'x'), 2, 1000);
+			rd.x = roundArrTo(getFieldIfExists(value,'x'), 2);
+			rd.y = roundArrTo(getFieldIfExists(value,'y'), 2);
+			console.log('rd.x ', rd.x);
+			console.log('rd.y ', rd.y);
 		},
 		tempSensor: (value) =>{
 			console.log('tempSensor ', value);
@@ -848,8 +850,7 @@ function createCanvasInstances(boardID) {
 				for (let i = 0; i < radarData.x.length; i++) {
 					x = Number(radarData.x[i]);
 					y = Number(radarData.y[i]);
-					
-				
+
 					if(radarData.rot){
 						// Scala i valori per adattarli allo schermo
 						scaledX = sketch.map(x, 6, -6, -sketch.width * 0.3, sketch.width * 0.3);
