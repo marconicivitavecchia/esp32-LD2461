@@ -444,8 +444,6 @@ function drawRegions(sketch, bid) {
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
 			let y = scaledY0; // Minimo tra le coordinate Y per ottenere il lato superiore
-			let widthRect = sketch.abs(scaledX1-scaledX0); // Differenza assoluta per la larghezza
-			let heightRect = sketch.abs(scaledY1-scaledY0); // Differenza assoluta per l'altezza
 			
 			// Disegna il punto
 			//fill(0, 255, 0);
@@ -742,7 +740,7 @@ function setInputListeners(boardID) {
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	radarinvertsend.onclick = () => {
 		if(boardData[currBoardId].radarData.rot == 0){
-			boardData.radarData.rot = 1;
+			boardData[currBoardId].radarData.rot = 1;
 			radarinvertsend.value = "Griglia ruotata";
 		}else{
 			boardData[currBoardId].radarData.rot = 0;
