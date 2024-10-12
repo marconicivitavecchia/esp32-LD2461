@@ -65,11 +65,11 @@ else:
 radaregions = config.get('regions', rgns)# attenzionare!
 #test_speeds = [9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800]
 #for speed in test_speeds:
-radarvel = 115200 # CAMBIA QUESTA VELOCITA'. Quando hai trovato la imposti nella pagina e poi commenti la riga
+#radarvel = 115200 # CAMBIA QUESTA VELOCITA'. Quando hai trovato la imposti nella pagina e poi commenti la riga
 S_ON.value(1)
 time.sleep(0.5)
-lista_x = [0, 0, 0, 0, 0]
-lista_y = [0, 0, 0, 0, 0]
+lista_x = []
+lista_y = []
 
 print('Baud rate', radarvel)
 def my_callback(code, val, len):
@@ -107,9 +107,10 @@ def my_callback(code, val, len):
         print('Callback set radar_factory!')
         if val:
             pubStateAtt("radarfactory", val)
-    elif code == 0x09:
-        print('Callback set radarmode!')	
-        pubStateAtt("radarmode", val)
+    elif code == 0x01:
+        print('Callback set baudrate!')
+        scrivi_servel(val)
+        pubStateAtt("servel", val)
         
 radar = LD2461(17, 18, radarvel, my_callback)    
 # Sensor configuration
@@ -189,7 +190,7 @@ def readFW():
     return data    
         
 def setBaudRate(rate):
-   radar.set_baud_rate(rate)
+   radar.set_baud_rate(int(rate))
        
 def scrivi_radarToggle(val):
     if S_ON.value():
@@ -211,7 +212,7 @@ def scrivi_servel(valore):
     print(f"Scrivi servel a {valore}")
     config['serial_speed'] = radarvel
     save_config('config.json', config)  
-    setBaudRate(radarvel)
+    #setBaudRate(radarvel)
 
 def scrivi_radarMode(valore):
     print(f"Scrivi radarMode a {valore}")
@@ -312,7 +313,7 @@ command_map = {
     "config": {
         "write": {# commands whose reception causes a configuration action on the system
             "polltime": scrivi_pollTime,
-            "servel": scrivi_servel,
+            "servel": setBaudRate,
             "radarmode": scrivi_radarMode,
             "radarfactory": scrivi_radarFactory,
             "radartoggle": scrivi_radarToggle,
