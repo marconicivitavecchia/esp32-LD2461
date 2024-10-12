@@ -62,8 +62,9 @@ function connectToBroker() {
 			
 			if( topic === pushtopic){
 				// Verifica se esiste già un elemento per questo boardID
-				if (!boardData[boardID]) {					
-					 boardData[boardID] = {
+				if (!boardData[boardID]){	
+					console.log('New boardID:', boardID);
+					boardData[boardID] = {
 						radarData: {
 							x: [0, 0, 0, 0, 0],
 							y: [0, 0, 0, 0, 0],
@@ -72,6 +73,7 @@ function connectToBroker() {
 							radarmode: 0,
 							regions: {
 								narea: [0, 0, 0],
+								ntarget: [0, 0, 0],
 								type: [0, 0, 0],
 								x0: [0, 0, 0],
 								y0: [0, 0, 0],
@@ -79,7 +81,16 @@ function connectToBroker() {
 								y1: [0, 0, 0],
 								color: ['red', 'green', 'blue'],
 								enabled: [0, 0, 0],
-								selected: 0,
+								selected: 1,
+								xr0: [0, 0, 0],
+								yr0: [0, 0, 0],
+								xr1: [0, 0, 0],
+								yr1: [0, 0, 0],
+								xnr0: [0, 0, 0],
+								ynr0: [0, 0, 0],
+								xnr1: [0, 0, 0],
+								ynr1: [0, 0, 0],
+								fw: [0, 0],
 							}
 						},
 						tempData: {
@@ -95,7 +106,6 @@ function connectToBroker() {
 						},
 						timestamp: "N/A",
 					};
-		
 					// Se non esiste, crea una nuova sezione HTML per questo boardID
 					createBoardSection(boardID);
 					createCanvasInstances(boardID); // Crea il canvas per questo boardID
@@ -105,8 +115,9 @@ function connectToBroker() {
 				console.log('Msg:', data);		
 			}
 			currBoardId = boardID;
+			console.log('CURRENT BOARDID: ', currBoardId);
 			//ms = ["measures"];
-			ms = ["tempSensor", "luxSensor", "radar"];
+			ms = ["measures","tempSensor", "luxSensor", "radar", "state"];
 			processJson(commandMap, data, [], ms);
 		});
 	}catch(e){
@@ -155,11 +166,9 @@ const commandMap = {
 	measures: {
 		radar: (value) =>{
 			console.log('radar ', value);
-			boardData[currBoardId].radarData = {
-				x: roundArrTo(getFieldIfExists(value,'x'), 2, 1000),
-				y: roundArrTo(getFieldIfExists(value,'y'), 2, 1000),
-				rot: boardData[currBoardId].radarData.rot
-			}
+			let rd = boardData[currBoardId].radarData;
+			rd.x = roundArrTo(getFieldIfExists(value,'x'), 2, 1000);
+			rd.y = roundArrTo(getFieldIfExists(value,'x'), 2, 1000);
 		},
 		tempSensor: (value) =>{
 			console.log('tempSensor ', value);
@@ -213,14 +222,37 @@ const commandMap = {
 			setElem(currBoardId, "radafactory", "Invia");
 		},
 		radarstate: (value) => {
-			console.log('radarstate');
-			value = "Inverti " + value;
-			setElem(currBoardId, "radarstate", value);
+			console.log('radarstate receive');
+			setElem(currBoardId, "radarstate", value,'.rep');
 		},
 		regions: (value) => {
-			console.log('regions');
-			value = "Inverti " + value;
-			setElem(currBoardId, "regions", value);
+			console.log('regions receive ', value);
+			console.log('currBoardId ', currBoardId);
+			console.log('currregion ', boardData[currBoardId].radarData);
+			// update boardData region from state feedback
+			let r = boardData[currBoardId].radarData.regions;
+			r.x0 = value.x0.map(Number);
+			r.y0 = value.y0.map(Number);
+			r.x1 = value.x1.map(Number);
+			r.y1 = value.y1.map(Number);
+			r.narea = value.narea.map(Number);
+			r.type = value.type.map(Number);
+			r.enabled = value.enabled.map(Number);
+
+			console.log('regions receive ENABLED', r.enabled);
+			setElem(currBoardId, "areaenable", '', '');
+			setElem(currBoardId, "areatypesel", '', '');
+			setElem(currBoardId, "areavertices", '', '');
+			setElem(currBoardId, "areasel", '', '');
+			expandBoardDataRegion(currBoardId);
+			updateInputsFromBoardDataRegion(currBoardId);
+			updateBoardUI(currBoardId);
+		},
+		ntarget: (value) => {
+			console.log('ntarget receive');
+			boardData[currBoardId].regions.ntarget = value;
+			console.log('ntarget'+value);
+			//setElem("bho", value,'.rep');
 		},
 	},
 	timestamp: (val) => {
@@ -309,8 +341,10 @@ function setElem(boardID, type, val, target='.send'){
 	console.log('str', `${type}-${boardID}`);
 	let elem = document.getElementById(`${type}-${boardID}`);
 	elem.style.backgroundColor = "#ffffff"; // resets the wait signal for command feedback
-	let inputelem = elem.querySelector(target);
+	if(target != ''){
+		let inputelem = elem.querySelector(target);
 		inputelem.value = val;
+	}
 }
 
 // Recursive parser of JSON data received asynchronously (representing the state of the device) 
@@ -318,16 +352,16 @@ function setElem(boardID, type, val, target='.send'){
 // The path must correspond to the path of the function to be called in the data structure of the command map. 
 // Invokes the function which, in the command map, has its pointer on that path.
 function processJson(commandMap, jsonObj, basePath = [], measures = []) {
-	//let measure = false;
-	//if(measures.includes(basePath[basePath.length-1])){
-	//	measure = true;
-	//}
+	let measure = false;
+	if(measures.includes(basePath[basePath.length-1])){
+		measure = true;
+	}
 
     for (const key in jsonObj) {
         if (jsonObj.hasOwnProperty(key)) {
             const value = jsonObj[key];
             const currentPath = [...basePath, key];
-            if (typeof value === 'object' && !Array.isArray(value) && !measures.includes(key)) {
+            if (typeof value === 'object' && !Array.isArray(value) && !measure) {
 				processJson(commandMap, value, currentPath, measures);          
             } else if (Array.isArray(value)) {// if it is a list of functions without parameters
                 for (const item of value) {
@@ -343,15 +377,15 @@ function processJson(commandMap, jsonObj, basePath = [], measures = []) {
 // Function that retrieves and invoke the function at the command path
 function executeCommand(commandMap, commandPath, parameters = null) {
     let currentLevel = commandMap;
-    for (const key of commandPath) { 
-        if (currentLevel[key]) { // itera sui campi annidati fino all'ultimo istanziato
+    for (const key of commandPath) {
+        if (currentLevel[key]) {
             currentLevel = currentLevel[key];
         } else {
-            console.log(`Unknown command: ${commandPath.join('/')}`);
-			return;
+            console.error(`Unknown command: ${commandPath.join('/')}`);
+            return;
         }
     }
-	
+
     if (typeof currentLevel === 'function') {
         if (parameters !== null) {
             currentLevel(parameters);
@@ -378,17 +412,49 @@ function millisToTimeString(millis) {
 						
 // Disegna la griglia delle aree
 function drawRegions(sketch, bid) {
-    sketch.stroke(100);
-    sketch.strokeWeight(0.5);
+    //stroke(255);
+    sketch.strokeWeight(1);
 	
-	let r = boardData[bid].radardata.regions;
+	let r = boardData[bid].radarData.regions;
 	
 	// draw areas rectangles
 	for(i=0; i<3; i++){
-		fill(255);
-		sketch.stroke(r.color);
-		sketch.rectMode(CORNERS);
-		sketch.rect(r.x0[i], r.y0[i], r.x1[i], r.y1[i]);
+		//console.log("r.enabled: "+ r);
+		if(r.enabled[i]){
+			//console.log("r: "+[r.x0[i], r.y0[i], r.x1[i], r.y1[i]]);
+			if(boardData[bid].radarData.rot){
+				// Scala i valori per adattarli allo schermo
+				scaledX0 = r.xr0[i];
+				scaledY0 = r.yr0[i];
+				scaledX1 = r.xr1[i];
+				scaledY1 = r.yr1[i];
+			}else{
+				scaledX0 = r.xnr0[i];
+				scaledY0 = r.ynr0[i];
+				scaledX1 = r.xnr1[i];
+				scaledY1 = r.ynr1[i];
+			}
+			//fill(r.color || [255, 0, 0]);
+			 sketch.noFill();
+			 sketch.stroke(r.color[i]);
+			 sketch.rectMode( sketch.CORNERS);
+			
+			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
+			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
+			let y = scaledY0; // Minimo tra le coordinate Y per ottenere il lato superiore
+			let widthRect = sketch.abs(scaledX1-scaledX0); // Differenza assoluta per la larghezza
+			let heightRect = sketch.abs(scaledY1-scaledY0); // Differenza assoluta per l'altezza
+			
+			// Disegna il punto
+			//fill(0, 255, 0);
+		
+			 sketch.ellipse(scaledX0, -scaledY0, 5, 5);
+
+			 sketch.ellipse(scaledX1, -scaledY1, 5, 5);
+
+			// Ora, ricorda che l'asse Y è invertito con la nuova origine
+			 sketch.rect(x, -y, scaledX1, -scaledY1); // Disegna il rettangolo
+		}
 	}
 }
 
@@ -408,14 +474,13 @@ function drawGrid(sketch) {
     }
 }
 
-// Disegna i cerchi tachimetrici
 function drawDistanceCircles(sketch, bid) {
-    const maxDistance = 6; // La distanza massima del radar
+    const maxDistance = 10; // La distanza massima del radar
     const numCircles = 5; // Numero di cerchi da disegnare
 	
 	let radarData = boardData[bid].radarData;
 
-    for (let i = 1; i <= numCircles; i++) {
+	for (let i = 1; i <= numCircles; i++) {
         let radius = sketch.map(i, 0, numCircles, 0, sketch.width / 2);
 		if(!radarData.rot){
 			sketch.ellipse(0, 0, radius * 2, radius * 2);
@@ -427,7 +492,7 @@ function drawDistanceCircles(sketch, bid) {
         sketch.textSize(12);
         sketch.textAlign(sketch.CENTER);
         let rounded = Math.round((maxDistance / numCircles) * i * 10) / 10;
-        sketch.text(`${rounded} m`, radius, -5 + radarData.rot*(20 - sketch.height));
+        sketch.text(`${rounded} m`, radius-13, -5 + radarData.rot*(20 - sketch.height));
     }
 }
 
@@ -435,148 +500,125 @@ function drawDistanceCircles(sketch, bid) {
 function createBoardSection(boardID) {
     let gridContainer = document.querySelector('.grid-container');
 
-	let timestamp = document.createElement('div');
-	timestamp.setAttribute("id", `timestamp-${boardID}`);
-	timestamp.setAttribute("class", 'col-12 col-s-12');
-	let radar = document.createElement('div');
-	radar.setAttribute("id", `radar-${boardID}`);
-	radar.setAttribute("class", "col-9 col-s-12 boxed");
-	let sensorData = document.createElement('div');
-    sensorData.setAttribute("id", `sensorData-${boardID}`);
-	sensorData.setAttribute("class", "col-3 col-s-12 boxed");
-	sensorData.innerHTML = `<p>Board ID: <span class="boardID">${boardID}</span></p>
-            <p>Temperatura: <span class="temp">N/A</span></p>
-            <p>Pressione: <span class="press">N/A</span></p>
-            <p>Umidità: <span class="hum">N/A</span></p>
-            <p>Gas: <span class="gas">N/A</span></p>
-            <p>Luce visibile: <span class="visible">N/A</span></p>
-            <p>Luce infrarossa: <span class="infrared">N/A</span></p>
-            <p>Luce totale: <span class="total">N/A</span></p>`;	
+	const tmpl1 = document.createElement("template");
+	tmpl1.innerHTML = `<div class='col-12 col-s-12' id='txt-banner'  class="header">
+	<h2 class="header">Monitoraggio radar</h2></div>
+	<div class='col-12 col-s-12' id="timestamp-${boardID}"></div>
+	<div class='col-9 col-s-12 boxed' id='radar-${boardID}'></div>
+	<div class='col-3 col-s-12 boxed' id='sensorData-${boardID}'>
+		<p>Board ID: <span class="boardID">${boardID}</span></p>
+		<p>Temperatura: <span class="temp">N/A</span></p>
+		<p>Pressione: <span class="press">N/A</span></p>
+		<p>Umidità: <span class="hum">N/A</span></p>
+		<p>Gas: <span class="gas">N/A</span></p>
+		<p>Luce visibile: <span class="visible">N/A</span></p>
+		<p>Luce infrarossa: <span class="infrared">N/A</span></p>
+		<p>Luce totale: <span class="total">N/A</span></p>
+	</div>
+			
+	<div id='poll1-${boardID}' class='col-1 col-s-12'>
+		<div class="txt"><p >Polling time</p></div>
+		<input class="poll1 button-large" type="time" step="1" />
+		<input class="send button-small button-blue" type="button" value="Invia"/>
+	</div>
+	<div class='col-1 col-s-12' id='servel-${boardID}'>
+		<div class="txt"><p >Radar serial</p></div>
+		<select name="vels" class="servel button-large">
+			<option value="9600">9600</option>
+			<option value="19200">19200</option>
+			<option value="38400">38400</option>
+			<option value="57600">57600</option>
+			<option value="115200">115200</option>
+			<option value="230400">230400</option>
+			<option value="256000">256000</option>
+			<option value="460800">460800</option>
+		</select>
+		<input class="send button-small button-blue" type="button" value="Invia"/>
+	</div>
+	<div class='col-1 col-s-12' id='radarstate-${boardID}'>
+		<div class="txt"><p >Radar state</p></div>
+		<input type="text"  value="0" class="rep">
+		<input type="button" class="send button-blue" value="Invia">
+	</div>
+	<div class='col-1 col-s-12' id='radarfactory-${boardID}'>
+		<div class="txt"><p >Radar factory</p></div>
+		<input type="text"  value="0" class="rep">
+		<input type="button" class="send button-blue" value="Invia">
+	</div>
+		<div class='col-1 col-s-12' id='radarmode-${boardID}'>
+		<div class="txt"><p >Radar mode</p></div>
+		<select name="target" class="sel button-large">
+			<option value="1">Track</option>
+			<option value="2">Report</option>
+			<option value="3">Both</option>
+		</select>
+		<input type="button" class="send button-blue" value="Invia">
+	</div>	
+	<div class='col-1 col-s-12' id='areaenable-${boardID}'>
+		<div class="txt"><p class="txt">Stato area</p></div>
+		<select name="areaenable" class="sel button-large">
+			<option value="1">Enabled</option>
+			<option value="0">Disabled</option>
+		</select>
+		<input type="button" class="send button-blue" value="Invia">
+	</div> 
+	<div class='col-1 col-s-12' id='areatypesel-${boardID}'>
+		<div class="txt"><p >Tipo area</p></div>
+		<select name="areatype" class="sel button-large">
+			<option value="0">Monitor</option>
+			<option value="1">Filter</option>
+		</select>
+	</div>
+	<div class='col-2 col-s-12' id='areavertices-${boardID}'>
+		<div class="txt"><p >Vertici area</p></div>
+		<div class="button-container">
+			<label class="poll1 button-small">V1</label> 
+			<label class="poll1 button-small">V2</label> 
+		</div>
+		<div class="button-container">
+			<input class="poll1 button-small x0" type="text" />
+			<input class="poll1 button-small y0" type="text" />
+			<input class="poll1 button-small x1" type="text" />
+			<input class="poll1 button-small y1" type="text"/>
+		</div>
+	</div>
+	<div class='col-1 col-s-12' id='areasel-${boardID}'>
+		<div class="txt"><p>Seleziona area</p></div>
+			<select name="target" class="sel button-large">
+				<option value="1">Area 1</option>
+				<option value="2">Area 2</option>
+				<option value="3">Area 3</option>
+			</select>
+			<input class="send button-small button-blue" type="button" value="Invia"/>
+	</div>
+	<div class='col-1 col-s-12' id='areareset-${boardID}'>
+		<div class="txt"><p >Cancella tutte</p></div>
+		<input type="text"  value="0">
+		<input type="button" class="send button-blue" value="Invia">
+	</div>		
+	<div class='col-1 col-s-12' id='radarinvert-${boardID}'>
+		<p class="txt">Inverti griglia</p>
+		<input type="text" value="0">
+		<input type="button"  class="send button-blue" value="Invia">
+	</div> `
 	
-	let poll1 = document.createElement('div');
-	poll1.setAttribute("id", `poll1-${boardID}`);
-	poll1.setAttribute("class", 'col-1 col-s-12');
-	poll1.innerHTML = `<div class="txt"><p >Polling time</p></div>
-			           <input class="poll1 button-large" type="time" step="1" />
-					   <input class="send button-small button-blue" type="button" value="Invia"/>`;
-	let servel = document.createElement('div');
-	servel.setAttribute("id", `servel-${boardID}`);
-	servel.setAttribute("class", 'col-1 col-s-12');
-	servel.innerHTML = `<div class="txt"><p >Radar serial</p></div>
-						<select name="vels" class="servel button-large">
-							<option value="9600">9600</option>
-							<option value="19200">19200</option>
-							<option value="38400">38400</option>
-							<option value="57600">57600</option>
-							<option value="115200">115200</option>
-							<option value="230400">230400</option>
-							<option value="256000">256000</option>
-							<option value="460800">460800</option>
-						</select>
-						<input class="send button-small button-blue" type="button" value="Invia"/>`;
-	let radarstate = document.createElement('div');
-	radarstate.setAttribute("id", `radarstate-${boardID}`);
-	radarstate.setAttribute("class", 'col-1 col-s-12');
-	radarstate.innerHTML = `<div class="txt"><p >Radar state</p></div>
-							<input type="text"  value="0">
-	                        <input type="button" class="send button-blue" value="Invia">`;
-	let radafactory = document.createElement('div');
-	radafactory.setAttribute("id", `radafactory-${boardID}`);
-	radafactory.setAttribute("class", 'col-1 col-s-12');
-	radafactory.innerHTML = `<div class="txt"><p >Radar factory</p>
-							 <input type="text"  value="0">
-						     <input type="button" class="send button-blue" value="Invia">`;
-	let radarmode = document.createElement('div');
-	radarmode.setAttribute("id", `radarmode-${boardID}`);
-	radarmode.setAttribute("class", 'col-1 col-s-12');
-	radarmode.innerHTML = `<div class="txt"><p >Radar mode</p></div>
-						   <select name="target" class="servel button-large">
-								<option value="1">Track</option>
-								<option value="2">Report</option>
-								<option value="3">Both</option>
-							</select>
-						    <input type="button" class="send button-blue">`;
-	let areaenable = document.createElement('div');
-	radarstate.setAttribute("id", `areaenable-${boardID}`);
-	radarstate.setAttribute("class", 'col-1 col-s-12');
-	radarstate.innerHTML = `<div class="txt"><p >Stato area</p></div>
-							<select name="areaenable" class="servel button-large">
-								<option value="0">Enabled</option>
-								<option value="1">Disabled</option>
-							</select>
-	                        </div><input type="button" class="send button-blue" value="Invia">`;
-	let areatype = document.createElement('div');
-	areatype.setAttribute("id", `areatype-${boardID}`);
-	areatype.setAttribute("class", 'col-1 col-s-12');
-	areatype.innerHTML = `<div class="txt"><p >Tipo area</p></div>
-						  <select name="areatype" class="servel button-large">
-							<option value="0">Monitor</option>
-							<option value="1">Filter</option>
-						  </select>
-						  <input type="button" class="send button-blue" value="Invia">`;
-    let areavertices = document.createElement('div');
-	areavertices.setAttribute("id", `areavertices-${boardID}`);
-	areavertices.setAttribute("class", 'col-1 col-s-12');
-	areavertices.innerHTML = `<div class="txt"><p >Vertici area</p></div>
-						<div class="button-container">
-							<label class="poll1 button-small">V1</label> 
-							<label class="poll1 button-small">V2</label> 
-						</div>
-						<div class="button-container">
-							<input class="poll1 button-small" type="text" step="1" />
-							<input class="poll1 button-small" type="text" step="1" />
-							<input class="poll1 button-small" type="text" step="1" />
-							<input class="poll1 button-small" type="text" step="1" />
-						</div>`;
-	let areatypesel = document.createElement('div');
-	areasel.setAttribute("id", `areasel-${boardID}`);
-	areasel.setAttribute("class", 'col-1 col-s-12');
-	areasel.innerHTML = `<div class="txt"><p >Seleziona area</p></div>
-						     <select name="target" class="servel button-large">
-								<option value="1">Area 1</option>
-								<option value="2">Area 2</option>
-								<option value="3">Area 3</option>
-							 </select>
-						     <input class="send button-small button-blue" type="button" value="Invia"/>`;
-	let deleteallareas = document.createElement('div');
-	deleteallareas.setAttribute("id", `deleteallareas-${boardID}`);
-	deleteallareas.setAttribute("class", 'col-1 col-s-12');
-	deleteallareas.innerHTML = `<div class="txt"><p >Cancella tutte</p></div>
-							<input type="text"  value="0">
-	                        </div><input type="button" class="send button-blue" value="Invia">`;
-	let radarinvert = document.createElement('div');
-	radarinvert.setAttribute("id", `radarinvert-${boardID}`);
-	radarinvert.setAttribute("class", 'col-1 col-s-12');
-	radarinvert.innerHTML = `<div class="txt"><p >Inverti griglia</p><input type="button" class="send button-blue" value="Invia">`;
-	
+	var body = tmpl1.content.cloneNode(true);
+
 	const tmpl2 = document.createElement("template");
 	tmpl2.innerHTML = `<div class='col-12 col-s-12' id='txt-nulla' class='footer'><h2 class="footer">Monitoraggio radar</h2></div>`
-			
-    gridContainer.appendChild(timestamp);
-	gridContainer.appendChild(radar);
-	gridContainer.appendChild(sensorData);
-	gridContainer.appendChild(poll1);
-	gridContainer.appendChild(servel);
-	gridContainer.appendChild(radarstate);
-	gridContainer.appendChild(radafactory);
-	gridContainer.appendChild(radarmode);
-	gridContainer.appendChild(radarenable);
-	gridContainer.appendChild(areatype);
-	gridContainer.appendChild(areavertices);
-	gridContainer.appendChild(areasel);
-	gridContainer.appendChild(deleteallareas);
-	gridContainer.appendChild(radarinvert);
 	var footer = tmpl2.content.cloneNode(true);
+
+	gridContainer.appendChild(body);
 	gridContainer.appendChild(footer);
-	
 	pubReadAtt(boardID, "allstate");
 }
 
 // Bind command listeners to input elements 
 function setInputListeners(boardID) {
-    let poll1 = document.getElementById(`poll1-${boardID}`);// Trova l'id del contenitore grid degli input
-	let poll1send = poll1.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
-	let poll1val = poll1.querySelector('.poll1');// Trova la classe dell'oggetto di input da leggere ogni evento utente
+    let poll1div = document.getElementById(`poll1-${boardID}`);// Trova l'id del contenitore grid degli input
+	let poll1send = poll1div.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	let poll1val = poll1div.querySelector('.poll1');// Trova la classe dell'oggetto di input da leggere ogni evento utente
+	/// POLL TIME SETTING  ///////////////////////////////////////////////////////////////////////////////////////
 	poll1send.onclick = () => {
 		const timeValue = poll1val.value;
 		console.log('timeValue:', timeValue);
@@ -585,9 +627,9 @@ function setInputListeners(boardID) {
 		// Calcola i millisecondi
 		const milliseconds = ((hours * 3600) + (minutes * 60) + seconds) * 1000;
 		pubAtt("polltime", milliseconds, boardID, "write");
-		poll1.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+		poll1div.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}
-	
+	/// RADAR SERIAL VEL SETTING ///////////////////////////////////////////////////////////////////////////////////////
 	let servel = document.getElementById(`servel-${boardID}`);// Trova l'id del contenitore grid degli input
 	let servelsend = servel.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	let servelval = servel.querySelector('.servel');// Trova la classe dell'oggetto di input da leggere ogni evento utente
@@ -597,73 +639,193 @@ function setInputListeners(boardID) {
 		pubAtt("servel", serValue, boardID, "write");
 		servel.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}
-	
+	/// RADAR MODE  ///////////////////////////////////////////////////////////////////////////////////////
 	let radarmode = document.getElementById(`radarmode-${boardID}`);// Trova l'id del contenitore grid degli input
+	let radarmodesel = radarmode.querySelector('.sel');
 	let radarmodesend = radarmode.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	radarmodesend.onclick = () => {
-		let mode = radarmodesend.value;	
-		let val = "singolo";
-		
-		console.log('mode', mode);
-		
-		//const [prima, dopo] = mode.split(' ');
-		
-		if (mode === "Inverti singolo"){
-			val  = "multi";
-		}else if (mode === "Inverti multi"){
-			val = "singolo";
-		}	
+		val = radarmodesel.value;
 		pubAtt("radarmode", val, boardID, "write");
-		radarmode.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+		radarmode.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback	
 	}
-	
-	let radafactory = document.getElementById(`radafactory-${boardID}`);// Trova l'id del contenitore grid degli input
-	let radarfactorysend = radafactory.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
-	radarfactorysend.onclick = () => {
-		pubAtt("radafactory", "1", boardID, "write");
-		radafactory.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+	/// RADAR AREA FACTORY  ///////////////////////////////////////////////////////////////////////////////////////
+	let radarfactory = document.getElementById(`radarfactory-${boardID}`);// Trova l'id del contenitore grid degli input
+	let radafactorysend = radarfactory.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	radafactorysend.onclick = () => {
+		pubAtt("radarfactory", "1", boardID, "write");
+		radarfactory.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}
-	
+	/// RADAR STATE ON/OFF  ///////////////////////////////////////////////////////////////////////////////////////
 	let radarstate = document.getElementById(`radarstate-${boardID}`);// Trova l'id del contenitore grid degli input
 	let radarstatesend = radarstate.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	radarstatesend.onclick = () => {
 		pubAtt("radartoggle", "1", boardID, "write");
 		radarstate.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}
-	
+	/// RADAR AREA CONFIG  ///////////////////////////////////////////////////////////////////////////////////////
+	let areavertices = document.getElementById(`areavertices-${boardID}`);
+	let x0= areavertices.querySelector('.x0');// Trova la classe dell'oggetto di input da leggere ogni evento utente
+	let y0= areavertices.querySelector('.y0');
+	let x1= areavertices.querySelector('.x1');
+	let y1= areavertices.querySelector('.y1');
+	let areatypesel = document.getElementById(`areatypesel-${boardID}`);// Trova l'id del contenitore grid degli inputlet areavertices = document.getElementById('areavertices');// Trova l'id del contenitore grid degli input
 	let areaenable = document.getElementById(`areaenable-${boardID}`);// Trova l'id del contenitore grid degli input
-	let areaenablesend = radarstate.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
-	areaenablesend.onclick = () => {
-		pubAtt("areaenable", "1", boardID, "write");
-		radarstate.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+	let areaenablesel = areaenable.querySelector('.sel');
+	let areatypeselsel = areatypesel.querySelector('.sel');
+	dataentry = [x0, y0, x1, y1, areaenablesel, areatypeselsel];
+
+	let areasel = document.getElementById(`areasel-${boardID}`);
+	let areaselsend = areasel.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	areaselsend.onclick = () => {
+		// update boardData region from user input
+		let r = boardData[currBoardId].radarData.regions;
+		let selectedRectangle = r.selected-1;
+		let typeval= areatypeselsel.value;
+		//let i= areaselsel.value;
+		let enabledval = areaenablesel.value;
+		//boardData.radarData.regions.selected = i;
+		r.x0[selectedRectangle] = Number(x0.value);
+		r.y0[selectedRectangle] = Number(y0.value);
+		r.x1[selectedRectangle] = Number(x1.value);
+		r.y1[selectedRectangle] = Number(y1.value);
+		r.type[selectedRectangle] = Number(typeval);
+		r.enabled[selectedRectangle] = Number(enabledval);
+		r.narea[selectedRectangle] = Number(selectedRectangle);
+		//expandBoardDataRegion();		
+
+		const region = {	
+			narea: boardData[currBoardId].radarData.regions.selected,
+			type: typeval,
+			enabled: enabledval,
+			x0: x0.value,
+			y0: y0.value,
+			x1: x1.value,
+			y1: y1.value,
+		};			
+		console.log('region send', region);
+		pubAtt("region", region, boardID, "write"); //serializza e invia
+		areavertices.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+		areasel.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+		areatypesel.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}
-	
+	/// RADAR AREA ENABLE/DISABLE  ///////////////////////////////////////////////////////////////////////////////////////
+	let areaselsel = areasel.querySelector('.sel');
+	areaselsel.onchange = () => {
+		console.log("areaselsel.onchange: "+ areaselsel.value);
+		boardData[currBoardId].radarData.regions.selected = Number(areaselsel.value);
+		updateInputsFromBoardDataRegion(currBoardId);
+	}
+	/// RADAR AREA ENABLE/DISABLE  ///////////////////////////////////////////////////////////////////////////////////////
+	let areaenablesend = areaenable.querySelector('.send');
+	areaenablesend.onclick = () => {
+		let areaenable = document.getElementById(`areaenable-${boardID}`);
+		let areaenablesel = areaenable.querySelector('.sel');
+		let enabled = Number(areaenablesel.value);
+		
+		let r = boardData[currBoardId].radarData.regions;
+		let region = r.selected;
+		if(enabled){
+			console.log('areenable '+region);
+			r.enabled[region-1] = 1;
+			pubAtt("areaenable", region, boardID, "write"); //serializza e invia
+		}else{
+			console.log('areadisable '+region);
+			r.enabled[region-1] = 0;
+			pubAtt("areadisable", region, boardID, "write"); //serializza e invia
+		}
+		areaenable.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+	}
+	/// RADAR GRID INVERT ///////////////////////////////////////////////////////////////////////////////////////
 	let radarinvert = document.getElementById(`radarinvert-${boardID}`);// Trova l'id del contenitore grid degli input
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	radarinvertsend.onclick = () => {
-		if(boardData[boardID].radarData.rot == 0){
-			boardData[boardID].radarData.rot = 1;
+		if(boardData[currBoardId].radarData.rot == 0){
+			boardData.radarData.rot = 1;
 			radarinvertsend.value = "Griglia ruotata";
 		}else{
-			boardData[boardID].radarData.rot = 0;
+			boardData[currBoardId].radarData.rot = 0;
 			radarinvertsend.value = "Griglia non ruotata";
 		}
 	}
+	/// RADAR ALL AREAS RESET ///////////////////////////////////////////////////////////////////////////////////////
+	let areareset = document.getElementById(`areareset-${boardID}`);// Trova l'id del contenitore grid degli input
+	let arearesetsend = areareset.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	arearesetsend.onclick = () => {
+		console.log('areareset');
+		pubAtt("areareset", 1, boardID, "write"); //serializza e invia
+		areareset.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
+	}
+}
+
+// Massive update of measurement outputs
+// is used for the massive update of all measurements
+function updateBoardUI(boardID) {
+   
+    let timestampElement = document.getElementById(`timestamp-${boardID}`);
+    timestampElement.innerText = convertDateTimeToHumanReadable(boardData[boardID].timestamp) + "   -   FW version: " + boardData[boardID].fw;
+
+    let sensorDataElement = document.getElementById(`sensorData-${boardID}`);
+    sensorDataElement.querySelector('.temp').innerText = `${boardData[boardID].tempData.temp} °C`;
+    sensorDataElement.querySelector('.press').innerText = `${boardData[boardID].tempData.press} Pa`;
+    sensorDataElement.querySelector('.hum').innerText = `${boardData[boardID].tempData.hum} %`;
+    sensorDataElement.querySelector('.gas').innerText = `${boardData[boardID].tempData.gas}`;
+    sensorDataElement.querySelector('.visible').innerText = `${boardData[boardID].luxData.visible} Lux`;
+    sensorDataElement.querySelector('.infrared').innerText = `${boardData[boardID].luxData.infrared} Lux`;
+    sensorDataElement.querySelector('.total').innerText = `${boardData[boardID].luxData.total} Lux`;
+}
+
+function expandBoardDataRegion(boardID) {	
+	let r = boardData[boardID].radarData.regions;
+	//let selectedRectangle = r.selected-1;
+
+	let container1 = document.getElementById(`radar-${boardID}`);
+	let width1 = container1.offsetWidth*0.988;
+	let height1 = width1*1.2/2;
+	for(let i=0; i<3; i++){
+		// rotated
+		selectedRectangle = i;
+		r.xr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.yr0[selectedRectangle] = map(r.y0[selectedRectangle], 6, 0, 0, -height1);
+		r.xr1[selectedRectangle] = map(r.x1[selectedRectangle], 6, -6, -width1 * 0.3, width1 * 0.3);
+		r.yr1[selectedRectangle] = map(r.y1[selectedRectangle], 6, 0, 0, -height1);
+		// not rotated
+		r.xnr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.ynr0[selectedRectangle] = map(r.y0[selectedRectangle], 0, -6, 0, -height1);
+		r.xnr1[selectedRectangle] = map(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.ynr1[selectedRectangle] = map(r.y1[selectedRectangle  ], 0, -6, 0, -height1);
+		
+		console.log("r.xnr0[i]:"+r.xnr0[selectedRectangle]);
+		console.log("r.ynr0[i] :"+r.ynr0[selectedRectangle]);
+		console.log("r.xnr1[i] :"+r.xnr1[selectedRectangle]);
+	}
+	console.log("r.ynr1[i] :"+r.ynr1[selectedRectangle]);
 }
 
 // Creazione funzione di setup e loop di disegno di ogni canvas
 function createCanvasInstances(boardID) {
     new p5(function(sketch) {
         let canvas;
+		let dragging = false;
+		let resizing = false;
+		let offsetX = 0;
+		let offsetY = 0;
+		let selectedCorner = null;
+		let width;
+		let height;
+
+		// Utility to check if mouse is near a corner for resizing
+		function isNearCorner(mx, my, x, y, threshold) {
+			let d = sketch.dist(mx, my, x, y);
+			console.log("Dist: "+d);
+			return d  < threshold;
+		}
+
         sketch.setup = function() {
             let container = document.getElementById(`radar-${boardID}`);
             let width = container.offsetWidth * 0.988;
-            let height = width * 1.1 / 2;
-			//define regions areas
-			//let selectedRectangle = 0;
-			let dragging = false;
-			let offsetX = 0;
-			let offsetY = 0;
+            let height = width * 1.2 / 2;
+			console.log("width: "+width);
+			console.log("height: "+height);
 
             let canvas = sketch.createCanvas(width, height).parent(container);
         };
@@ -672,33 +834,35 @@ function createCanvasInstances(boardID) {
             sketch.background(0);
             sketch.translate(sketch.width / 2, sketch.height); // Sposta l'origine in basso al centro
             drawGrid(sketch);
+			drawRegions(sketch, boardID);
             sketch.stroke(255);
             sketch.noFill();
             drawDistanceCircles(sketch, boardID);
-			drawRegions(sketch, boardID);
+			let x = 0;
+			let y = 0;
+			let scaledX = 0;
+			let scaledY = 0;
 
             let radarData = boardData[boardID].radarData;
-			// print coordinates
-			if(radarData && radarData.x){
+			if(radarData.x){
 				for (let i = 0; i < radarData.x.length; i++) {
-					let x = radarData.x[i];
-					let y = radarData.y[i];
-					let scaledX = 0;
-					let scaledY = 0;
-
+					x = Number(radarData.x[i]);
+					y = Number(radarData.y[i]);
+					
+				
 					if(radarData.rot){
 						// Scala i valori per adattarli allo schermo
-						scaledX = sketch.map(x, 6, -6, -sketch.width * 0.3, sketch.width * 0.3);
-						scaledY = sketch.map(y, 6, 0, 0, -sketch.height);
+						scaledX = sketch.map(x, 6, -6, -width * 0.3, width * 0.3);
+						scaledY = sketch.map(y, 6, 0, 0, -height);
 					}else{
-						scaledX = sketch.map(x, -6, 6, -sketch.width * 0.3, sketch.width * 0.3);
-						scaledY = sketch.map(y, 0, 6, 0, -sketch.height);
+						scaledX = sketch.map(x, -6, 6, -width * 0.3, width * 0.3);
+						scaledY = sketch.map(y, 0, 6, 0, -height);
 					}
-
+					// Disegna il punto
 					sketch.fill(0, 255, 0);
-					sketch.noStroke();
+					sketch.noStroke();        
 					sketch.ellipse(scaledX, scaledY, 10, 10);
-
+					// Etichette
 					sketch.fill(255);
 					sketch.textSize(12);
 					sketch.text(`X: ${x}`, scaledX + 5, scaledY - 20+radarData.rot*20);
@@ -707,17 +871,198 @@ function createCanvasInstances(boardID) {
 			}
         };
         
-        function resizeCanvasToDiv() {
+        sketch.windowResized = function () {
             let container = document.getElementById(`radar-${boardID}`);
             let width = container.offsetWidth * 0.988;
             let height = width * 1.1 / 2;
 
             sketch.resizeCanvas(width, height);
-        }
-        
-        sketch.windowResized = resizeCanvasToDiv;
-        
-    }, `radar-${boardID}`);
+        };
+
+		sketch.mousePressed = function() {
+			let scaledX = 0;
+			let scaledY = 0;
+			let r = boardData[boardID].radarData.regions;
+			let selectedRectangle = r.selected -1;
+			let rect = [];	
+			
+			if(boardData[boardID].radarData.rot){
+				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
+				scaledX = width/2 - sketch.mouseX;
+				scaledY = sketch.mouseY;
+				rect[0] = r.xr0[selectedRectangle];
+				rect[1] = r.yr0[selectedRectangle];
+				rect[2] = r.xr1[selectedRectangle];
+				rect[3] = r.yr1[selectedRectangle];
+			}else{
+				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
+				scaledX = sketch.mouseX - width /2;
+				scaledY = height - sketch.mouseY;
+				rect[0] = r.xnr0[selectedRectangle];
+				rect[1] = r.ynr0[selectedRectangle];
+				rect[2] = r.xnr1[selectedRectangle];
+				rect[3] = r.ynr1[selectedRectangle];
+			}
+			
+			console.log("rect: "+rect);
+			console.log("scaledX: "+scaledX);
+			console.log("scaledY: "+scaledY);
+			console.log("mousePressed");
+			// Check if mouse is near any corner for resizing
+			const resizeThreshold = 10;
+			if (isNearCorner(scaledX, scaledY, rect[0], rect[1], resizeThreshold)) {
+				dragging = false;
+				resizing = true;
+				selectedCorner = 'topLeft';
+				console.log("Near topleft");
+			} else if (isNearCorner(scaledX, scaledY, rect[2], rect[1], resizeThreshold)) {
+				dragging = false;
+				resizing = true;
+				selectedCorner = 'topRight';
+				console.log("Near topRight");
+			} else if (isNearCorner(scaledX, scaledY, rect[0], rect[3], resizeThreshold)) {
+				dragging = false;
+				resizing = true;
+				selectedCorner = 'bottomLeft';
+				console.log("Near bottomLeft");
+			} else if (isNearCorner(scaledX, scaledY, rect[2], rect[3], resizeThreshold)) {
+				dragging = false;
+				resizing = true;
+				selectedCorner = 'bottomRight';
+				console.log("Near bottomRight");
+			} else if (scaledX > rect[0] && scaledX < rect[2] && scaledY > rect[3] && scaledY < rect[1]) {
+				cursor("grab");
+				console.log("Near inside for dragging");
+				// Otherwise check if inside the rectangle for dragging 
+				// Traslazione
+				dragging = true;
+				offsetX = scaledX - rect[0]; 
+				offsetY = scaledY - rect[1];
+				console.log("offset: "+offsetX+" - "+offsetY);
+			}else{
+				sketch.cursor(sketch.ARROW);
+			}
+		}
+		
+		sketch.mouseDragged = function() {
+			let scaledX = 0;
+			let scaledY = 0;
+			let r = boardData[boardID].radarData.regions;
+			let selectedRectangle = r.selected -1;
+			let rect = [];
+			
+			if(boardData[boardID].radarData.rot){
+				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
+				scaledX = width/2 - sketch.mouseX;
+				scaledY = sketch.mouseY;
+				
+				rect[0] = r.xr0[selectedRectangle];
+				rect[1] = r.yr0[selectedRectangle];
+				rect[2] = r.xr1[selectedRectangle];
+				rect[3] = r.yr1[selectedRectangle];
+				
+				if (dragging) {
+					// Move the entire rectangle
+					let widthdr = rect[2] - rect[0];
+					let heightdr = rect[3] - rect[1];
+
+					r.xr0[selectedRectangle] = scaledX - offsetX;
+					r.yr0[selectedRectangle] = scaledY - offsetY;
+					r.xr1[selectedRectangle] = r.xr0[selectedRectangle] + widthdr;
+					r.yr1[selectedRectangle] = r.yr0[selectedRectangle] + heightdr;
+					
+					r.x0[selectedRectangle] = mapInverse(r.xr0, -width * 0.3, width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -height, 6, 0);
+					r.x1[selectedRectangle] = mapInverse(r.xr1, -width * 0.3, width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -height, 6, 0);
+					updateInputsFromBoardDataRegion(currBoardId);
+				} else if (resizing) {
+					// Resize the rectangle based on selected corner
+					if (selectedCorner === 'topLeft') {
+						console.log("drag topLeft");
+						r.xr0[selectedRectangle] = scaledX;
+						r.yr0[selectedRectangle] = scaledY;
+					} else if (selectedCorner === 'topRight') {
+						console.log("drag topRight");
+						r.xr1[selectedRectangle] = scaledX;
+						r.yr0[selectedRectangle] = scaledY;
+					} else if (selectedCorner === 'bottomLeft') {
+						console.log("drag bottomLeft");
+						r.xr0[selectedRectangle] = scaledX;
+						r.yr1[selectedRectangle] = scaledY;
+					} else if (selectedCorner === 'bottomRight') {
+						console.log("drag bottomRight");
+						r.xr1[selectedRectangle] = scaledX;
+						r.yr1[selectedRectangle] = scaledY;
+					}
+					
+					r.x0[selectedRectangle] = mapInverse(r.xr0, -width * 0.3, width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -height, 6, 0);
+					r.x1[selectedRectangle] = mapInverse(r.xr1, -width * 0.3, width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -height, 6, 0);
+					updateInputsFromBoardDataRegion(currBoardId);
+				}
+				
+			}else{
+				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
+				scaledX = sketch.mouseX - width /2;
+				scaledY = height - sketch.mouseY;
+				
+				rect[0] = r.xnr0[selectedRectangle];
+				rect[1] = r.ynr0[selectedRectangle];
+				rect[2] = r.xnr1[selectedRectangle];
+				rect[3] = r.ynr1[selectedRectangle];
+				
+				if (dragging) {
+					// Move the entire rectangle
+					let widthd = rect[2] - rect[0];
+					let heightd = rect[3] - rect[1];
+
+					r.xnr0[selectedRectangle] = scaledX - offsetX;
+					r.ynr0[selectedRectangle] = scaledY - offsetY;
+					r.xnr1[selectedRectangle] = r.xnr0[selectedRectangle] + widthd;
+					r.ynr1[selectedRectangle] = r.ynr0[selectedRectangle] + heightd;
+					//console.log("dragging: "+(scaledX - offsetX)+" - "+ (scaledY - offsetY);
+					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
+					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
+					updateInputsFromBoardDataRegion(currBoardId);
+				} else if (resizing) {
+					// Resize the rectangle based on selected corner
+					if (selectedCorner === 'topLeft') {
+						console.log("drag topLeft");
+						r.xnr0[selectedRectangle] = scaledX;
+						r.ynr0[selectedRectangle] = scaledY;
+					} else if (selectedCorner === 'topRight') {
+						console.log("drag topRight");
+						r.xnr1[selectedRectangle] = scaledX;
+						r.ynr0[selectedRectangle] = scaledY;
+					} else if (selectedCorner === 'bottomLeft') {
+						console.log("drag bottomLeft");
+						r.xnr0[selectedRectangle] = scaledX;
+						r.ynr1[selectedRectangle] = scaledY;
+					} else if (selectedCorner === 'bottomRight') {
+						r.xnr1[selectedRectangle] = scaledX;
+						r.ynr1[selectedRectangle] = scaledY;
+					}
+					console.log("resize: "+scaledX+" - "+scaledY);
+					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
+					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
+					updateInputsFromBoardDataRegion(currBoardId);
+				}
+			}
+		}	
+
+		sketch.mouseReleased = function () {
+			dragging = false;
+			resizing = false;
+			selectedCorner = null;
+			sketch.cursor(sketch.ARROW);
+		}
+	}, `radar-${boardID}`);	
 }
 
 function convertDateTimeToHumanReadable(dateTimeString) {
@@ -759,4 +1104,25 @@ function adjustDateTime(dateTimeString) {
     const adjustedDate = new Date(dateTime.getTime() - offset);
 
     return adjustedDate;
+}
+
+function updateInputsFromBoardDataRegion(boardID) {
+	let r = boardData[boardID].radarData.regions;
+	let selectedRectangle = r.selected -1;
+	dataentry[0].value = roundTo(r.x0[selectedRectangle], 1);
+	dataentry[1].value = roundTo(r.y0[selectedRectangle], 1);
+	dataentry[2].value = roundTo(r.x1[selectedRectangle], 1);
+	dataentry[3].value = roundTo(r.y1[selectedRectangle], 1);
+	dataentry[4].value = roundTo(r.enabled[selectedRectangle], 1);
+	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);
+}
+
+
+function mapInverse(value, start2, stop2, start1, stop1) {
+  return (value - start2) * (stop1 - start1) / (stop2 - start2) + start1;
+}
+
+
+function map(value, start1, stop1, start2, stop2) {
+  return (value - start1) * (stop2 - start2) / (stop1 - start1) + start2;
 }
