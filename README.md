@@ -7,3 +7,5 @@ The following is an example of a complete config.json file:
 ```Json
 {"regions": [{"x1": 10, "x0": 10, "x3": 10, "x2": 30, "enabled": 1, "narea": 1, "type": 0, "y0": 40, "y1": 20, "y2": 20, "y3": 20}, {"x1": 49, "x0": 49, "x3": 49, "x2": 78, "enabled": 1, "narea": 2, "type": 0, "y0": 39, "y1": 21, "y2": 21, "y3": 21}, {"x1": 0, "x0": 0, "x3": 0, "x2": 0, "enabled": 0, "narea": 3, "type": 0, "y0": 0, "y1": 0, "y2": 0, "y3": 0}], "serial_speed": 9600}
 ```
+
+If you are interested in designing the JSON message parser or managing MQTT messages see https://github.com/marconicivitavecchia/esp32-radar/tree/main
