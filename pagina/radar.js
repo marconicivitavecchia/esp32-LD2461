@@ -92,7 +92,7 @@ const commandMap = {
 				regions: (value) => {
 					console.log('regions receive ', value);
 					// update boardData region from state feedback
-					let r = boardData.radarData.regions
+					let r = boardData.radarData.regions;
 					r.x0 = value.x0.map(Number);
 					r.y0 = value.y0.map(Number);
 					r.x1 = value.x1.map(Number);
@@ -192,9 +192,8 @@ function connectToBroker() {
 					try{
 						val = data.measures.radar
 						if ('null' != val){
-							boardData.radarData.x = roundArrTo(getFieldIfExists(val,'x'), 2, 1000);
-							boardData.radarData.y = roundArrTo(getFieldIfExists(val,'y'), 2, 1000);
-							boardData.radarData.rot = boardData.radarData.rot;
+							boardData.radarData.x = roundArrTo(getFieldIfExists(val,'x'), 2);
+							boardData.radarData.y = roundArrTo(getFieldIfExists(val,'y'), 2);
 						}
 						val = data.measures.tempSensor
 						if ('null' != val){
@@ -678,8 +677,6 @@ function drawRegions(bid) {
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
 			let y = scaledY0; // Minimo tra le coordinate Y per ottenere il lato superiore
-			let widthRect = abs(scaledX1-scaledX0); // Differenza assoluta per la larghezza
-			let heightRect = abs(scaledY1-scaledY0); // Differenza assoluta per l'altezza
 			
 			// Disegna il punto
 			//fill(0, 255, 0);
@@ -713,7 +710,6 @@ function drawDistanceCircles() {
     const maxDistance = 10; // La distanza massima del radar
     const numCircles = 5; // Numero di cerchi da disegnare
 
-	
 	for (let i = 1; i <= numCircles; i++) {
         let radius = map(i, 0, numCircles, 0, width / 2);
 		if(!boardData.radarData.rot){
@@ -873,21 +869,26 @@ function mouseDragged() {
 	let r = boardData.radarData.regions;
 	let selectedRectangle = r.selected -1;
 	let rect = [];
-	
+
 	if(boardData.radarData.rot){
 		// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
 		scaledX = width/2 - mouseX;
 		scaledY = mouseY;
-		
-		rect[0] = r.xr0[selectedRectangle];
-		rect[1] = r.yr0[selectedRectangle];
-		rect[2] = r.xr1[selectedRectangle];
-		rect[3] = r.yr1[selectedRectangle];
+
+		rect[0] = r.xnr0[selectedRectangle];
+		rect[1] = r.ynr0[selectedRectangle];
+		rect[2] = r.xnr1[selectedRectangle];
+		rect[3] = r.ynr1[selectedRectangle];
 		
 		if (dragging) {
 			// Move the entire rectangle
 			let widthdr = rect[2] - rect[0];
 			let heightdr = rect[3] - rect[1];
+
+			console.log("rect: "+rect);
+			console.log("scaledX: "+scaledX);
+			console.log("scaledY: "+scaledY);
+			console.log("mouseDragged");
 
 			r.xr0[selectedRectangle] = scaledX - offsetX;
 			r.yr0[selectedRectangle] = scaledY - offsetY;

@@ -129,13 +129,20 @@ def execute_command(command_map, command_path, parameters=None):
 # Returns the path of the command in the received JSON data structure. 
 # The path must correspond to the path of the function to be called in the data structure of the command map. 
 # Invokes the function which, in the command map, has its pointer on that path.
-def process_json(command_map, json_obj, base_path=[]):
+def process_json(command_map, json_obj, prev_path=[], measures = []):
+    measure = False
+    
+    if prev_path and prev_path[-1] in measures:  # basePath[-1] ottiene l'ultimo elemento
+        measure = True
+        
+    print('measure', measure)
+        
     for key, value in json_obj.items():
-        current_path = base_path + [key]
+        current_path = prev_path + [key]
         print('current_path',current_path)
         print('value',value)
-        if isinstance(value, dict):
-            process_json(command_map, value, current_path)
+        if isinstance(value, dict) and not measure:
+            process_json(command_map, value, current_path, measures)
         elif isinstance(value, list):# se è una lista di funzioni senza parametri
             for item in value:
                 execute_command(command_map, current_path + [item])

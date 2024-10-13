@@ -79,7 +79,7 @@ function connectToBroker() {
 								y0: [0, 0, 0],
 								x1: [0, 0, 0],
 								y1: [0, 0, 0],
-								color: ['red', 'green', 'blue'],
+								color: ['red', 'green', 'yelllow'],
 								enabled: [0, 0, 0],
 								selected: 1,
 								xr0: [0, 0, 0],
@@ -167,8 +167,10 @@ const commandMap = {
 		radar: (value) =>{
 			console.log('radar ', value);
 			let rd = boardData[currBoardId].radarData;
-			rd.x = roundArrTo(getFieldIfExists(value,'x'), 2, 1000);
-			rd.y = roundArrTo(getFieldIfExists(value,'x'), 2, 1000);
+			rd.x = roundArrTo(getFieldIfExists(value,'x'), 2);
+			rd.y = roundArrTo(getFieldIfExists(value,'y'), 2);
+			console.log('rd.x ', rd.x);
+			console.log('rd.y ', rd.y);
 		},
 		tempSensor: (value) =>{
 			console.log('tempSensor ', value);
@@ -442,8 +444,6 @@ function drawRegions(sketch, bid) {
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
 			let y = scaledY0; // Minimo tra le coordinate Y per ottenere il lato superiore
-			let widthRect = sketch.abs(scaledX1-scaledX0); // Differenza assoluta per la larghezza
-			let heightRect = sketch.abs(scaledY1-scaledY0); // Differenza assoluta per l'altezza
 			
 			// Disegna il punto
 			//fill(0, 255, 0);
@@ -740,7 +740,7 @@ function setInputListeners(boardID) {
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	radarinvertsend.onclick = () => {
 		if(boardData[currBoardId].radarData.rot == 0){
-			boardData.radarData.rot = 1;
+			boardData[currBoardId].radarData.rot = 1;
 			radarinvertsend.value = "Griglia ruotata";
 		}else{
 			boardData[currBoardId].radarData.rot = 0;
@@ -848,15 +848,14 @@ function createCanvasInstances(boardID) {
 				for (let i = 0; i < radarData.x.length; i++) {
 					x = Number(radarData.x[i]);
 					y = Number(radarData.y[i]);
-					
-				
+
 					if(radarData.rot){
 						// Scala i valori per adattarli allo schermo
-						scaledX = sketch.map(x, 6, -6, -width * 0.3, width * 0.3);
+						scaledX = sketch.map(x, 6, -6, -sketch.width * 0.3, sketch.width * 0.3);
 						scaledY = sketch.map(y, 6, 0, 0, -height);
 					}else{
-						scaledX = sketch.map(x, -6, 6, -width * 0.3, width * 0.3);
-						scaledY = sketch.map(y, 0, 6, 0, -height);
+						scaledX = sketch.map(x, -6, 6, -sketch.width * 0.3, sketch.width * 0.3);
+						scaledY = sketch.map(y, 0, 6, 0, -sketch.height);
 					}
 					// Disegna il punto
 					sketch.fill(0, 255, 0);
@@ -888,7 +887,7 @@ function createCanvasInstances(boardID) {
 			
 			if(boardData[boardID].radarData.rot){
 				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = width/2 - sketch.mouseX;
+				scaledX = sketch.width/2 - sketch.mouseX;
 				scaledY = sketch.mouseY;
 				rect[0] = r.xr0[selectedRectangle];
 				rect[1] = r.yr0[selectedRectangle];
@@ -896,8 +895,8 @@ function createCanvasInstances(boardID) {
 				rect[3] = r.yr1[selectedRectangle];
 			}else{
 				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = sketch.mouseX - width /2;
-				scaledY = height - sketch.mouseY;
+				scaledX = sketch.mouseX - sketch.width /2;
+				scaledY = sketch.height - sketch.mouseY;
 				rect[0] = r.xnr0[selectedRectangle];
 				rect[1] = r.ynr0[selectedRectangle];
 				rect[2] = r.xnr1[selectedRectangle];
@@ -931,7 +930,7 @@ function createCanvasInstances(boardID) {
 				selectedCorner = 'bottomRight';
 				console.log("Near bottomRight");
 			} else if (scaledX > rect[0] && scaledX < rect[2] && scaledY > rect[3] && scaledY < rect[1]) {
-				cursor("grab");
+				sketch.cursor("grab");
 				console.log("Near inside for dragging");
 				// Otherwise check if inside the rectangle for dragging 
 				// Traslazione
@@ -950,17 +949,17 @@ function createCanvasInstances(boardID) {
 			let r = boardData[boardID].radarData.regions;
 			let selectedRectangle = r.selected -1;
 			let rect = [];
-			
+		
 			if(boardData[boardID].radarData.rot){
 				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = width/2 - sketch.mouseX;
+				scaledX = sketch.width/2 - sketch.mouseX;
 				scaledY = sketch.mouseY;
-				
-				rect[0] = r.xr0[selectedRectangle];
-				rect[1] = r.yr0[selectedRectangle];
-				rect[2] = r.xr1[selectedRectangle];
-				rect[3] = r.yr1[selectedRectangle];
-				
+
+				rect[0] = r.xnr0[selectedRectangle];
+				rect[1] = r.ynr0[selectedRectangle];
+				rect[2] = r.xnr1[selectedRectangle];
+				rect[3] = r.ynr1[selectedRectangle];
+							
 				if (dragging) {
 					// Move the entire rectangle
 					let widthdr = rect[2] - rect[0];
@@ -971,11 +970,11 @@ function createCanvasInstances(boardID) {
 					r.xr1[selectedRectangle] = r.xr0[selectedRectangle] + widthdr;
 					r.yr1[selectedRectangle] = r.yr0[selectedRectangle] + heightdr;
 					
-					r.x0[selectedRectangle] = mapInverse(r.xr0, -width * 0.3, width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -height, 6, 0);
-					r.x1[selectedRectangle] = mapInverse(r.xr1, -width * 0.3, width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -height, 6, 0);
-					updateInputsFromBoardDataRegion(currBoardId);
+					r.x0[selectedRectangle] = mapInverse(r.xr0, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -sketch.height, 6, 0);
+					r.x1[selectedRectangle] = mapInverse(r.xr1, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -sketch.height, 6, 0);
+					updateInputsFromBoardDataRegion(boardID);
 				} else if (resizing) {
 					// Resize the rectangle based on selected corner
 					if (selectedCorner === 'topLeft') {
@@ -996,17 +995,18 @@ function createCanvasInstances(boardID) {
 						r.yr1[selectedRectangle] = scaledY;
 					}
 					
-					r.x0[selectedRectangle] = mapInverse(r.xr0, -width * 0.3, width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -height, 6, 0);
-					r.x1[selectedRectangle] = mapInverse(r.xr1, -width * 0.3, width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -height, 6, 0);
-					updateInputsFromBoardDataRegion(currBoardId);
+					r.x0[selectedRectangle] = mapInverse(r.xr0, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -sketch.height, 6, 0);
+					r.x1[selectedRectangle] = mapInverse(r.xr1, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -sketch.height, 6, 0);
+					
+					updateInputsFromBoardDataRegion(boardID);
 				}
 				
 			}else{
 				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = sketch.mouseX - width /2;
-				scaledY = height - sketch.mouseY;
+				scaledX = sketch.mouseX - sketch.width /2;
+				scaledY = sketch.height - sketch.mouseY;
 				
 				rect[0] = r.xnr0[selectedRectangle];
 				rect[1] = r.ynr0[selectedRectangle];
@@ -1023,11 +1023,11 @@ function createCanvasInstances(boardID) {
 					r.xnr1[selectedRectangle] = r.xnr0[selectedRectangle] + widthd;
 					r.ynr1[selectedRectangle] = r.ynr0[selectedRectangle] + heightd;
 					//console.log("dragging: "+(scaledX - offsetX)+" - "+ (scaledY - offsetY);
-					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
-					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
-					updateInputsFromBoardDataRegion(currBoardId);
+					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -sketch.height, 0, -6);
+					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -sketch.height, 0, -6);
+					updateInputsFromBoardDataRegion(boardID);
 				} else if (resizing) {
 					// Resize the rectangle based on selected corner
 					if (selectedCorner === 'topLeft') {
@@ -1047,11 +1047,11 @@ function createCanvasInstances(boardID) {
 						r.ynr1[selectedRectangle] = scaledY;
 					}
 					console.log("resize: "+scaledX+" - "+scaledY);
-					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
-					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
-					updateInputsFromBoardDataRegion(currBoardId);
+					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -sketch.height, 0, -6);
+					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
+					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -sketch.height, 0, -6);
+					updateInputsFromBoardDataRegion(boardID);
 				}
 			}
 		}	

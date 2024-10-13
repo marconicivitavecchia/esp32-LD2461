@@ -21,6 +21,9 @@ class MovingStatistics:
     def setNumSensors(self, num_sensors):
         self.num_sensors = num_sensors
         
+    def getNumSensors(self):
+        return self.num_sensors
+        
     def update(self, new_values, stats_to_update):
         results = {}
         

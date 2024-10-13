@@ -223,20 +223,13 @@ class LD2461:
         if datalen > 5:
             datalen = 5
         offset = 3
-        #for i in range(datalen):  
-            #base_index = i * 4 + offset # Calcola l'indice base per ogni gruppo di 2 byte
-            # Estrai 2 byte per 'x' e 'y' correttamente usando slicing
-            #self.persons[i]["x"] = self.from_signed_bytes_big(frame_data[base_index:base_index + 2]) / 10
-            #self.persons[i]["y"] = self.from_signed_bytes_big(frame_data[base_index + 2:base_index + 4]) / 10
-            #result['lista_x'].append(self.persons[i]["x"])
-            #result['lista_y'].append(self.persons[i]["y"])
         
         for i in range(datalen):
             base_index = i * 2 + offset # Calcola l'indice base per ogni byte
             self.persons[i]["x"] = self.byte_to_signed_integers(frame_data[base_index])
             self.persons[i]["y"] = self.byte_to_signed_integers(frame_data[base_index+1])
-            result['lista_x'].append(self.persons[i]["x"])
-            result['lista_y'].append(self.persons[i]["y"])
+            result['lista_x'].append(self.persons[i]["x"]/10)
+            result['lista_y'].append(self.persons[i]["y"]/10)
             
         #print(f'x: {result['lista_x']}')
         #print(f'y: {result['lista_y']}')   
