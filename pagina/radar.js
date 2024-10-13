@@ -497,13 +497,13 @@ function setInputListeners() {
 	let areaselsel = areasel.querySelector('.sel');
 	areaselsel.onchange = () => {
 		console.log("areaselsel.onchange: "+ areaselsel.value);
-		boardData.radarData.regions.selected = Number(areaselsel.value);
+		let r = boardData.radarData.regions;
+		r.selected = Number(areaselsel.value);
 		updateInputsFromBoardDataRegion();
 	}
 	/// RADAR AREA ENABLE/DISABLE  ///////////////////////////////////////////////////////////////////////////////////////
 	let areaenablesend = areaenable.querySelector('.send');
 	areaenablesend.onclick = () => {
-		let areaenable = document.getElementById('areaenable');
 		let areaenablesel = areaenable.querySelector('.sel');
 		let enabled = Number(areaenablesel.value);
 		
@@ -789,7 +789,7 @@ function updateInputsFromBoardDataRegion() {
 	dataentry[2].value = roundTo(r.x1[selectedRectangle], 1);
 	dataentry[3].value = roundTo(r.y1[selectedRectangle], 1);
 	dataentry[4].value = roundTo(r.enabled[selectedRectangle], 1);
-	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);
+	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);			
 }
 
 let dragging = false;

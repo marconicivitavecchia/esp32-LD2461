@@ -79,7 +79,7 @@ function connectToBroker() {
 								y0: [0, 0, 0],
 								x1: [0, 0, 0],
 								y1: [0, 0, 0],
-								color: ['red', 'green', 'yelllow'],
+								color: ['red', 'green', 'blue'],
 								enabled: [0, 0, 0],
 								selected: 1,
 								xr0: [0, 0, 0],
