@@ -231,8 +231,8 @@ class LD2461:
             result['lista_x'].append(self.persons[i]["x"]/10)
             result['lista_y'].append(self.persons[i]["y"]/10)
             
-        #print(f'x: {result['lista_x']}')
-        #print(f'y: {result['lista_y']}')   
+        print(f'radar_x: {result['lista_x']}')
+        print(f'radar_y: {result['lista_y']}')   
         self.callback(GET_COORDINATES, result, datalen)
         
     def get_coordinatesFromRAM(self):

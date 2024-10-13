@@ -194,7 +194,6 @@ function connectToBroker() {
 						if ('null' != val){
 							boardData.radarData.x = roundArrTo(getFieldIfExists(val,'x'), 2);
 							boardData.radarData.y = roundArrTo(getFieldIfExists(val,'y'), 2);
-							boardData.radarData.rot = boardData.radarData.rot;
 						}
 						val = data.measures.tempSensor
 						if ('null' != val){
@@ -498,13 +497,13 @@ function setInputListeners() {
 	let areaselsel = areasel.querySelector('.sel');
 	areaselsel.onchange = () => {
 		console.log("areaselsel.onchange: "+ areaselsel.value);
-		boardData.radarData.regions.selected = Number(areaselsel.value);
+		let r = boardData.radarData.regions;
+		r.selected = Number(areaselsel.value);
 		updateInputsFromBoardDataRegion();
 	}
 	/// RADAR AREA ENABLE/DISABLE  ///////////////////////////////////////////////////////////////////////////////////////
 	let areaenablesend = areaenable.querySelector('.send');
 	areaenablesend.onclick = () => {
-		let areaenable = document.getElementById('areaenable');
 		let areaenablesel = areaenable.querySelector('.sel');
 		let enabled = Number(areaenablesel.value);
 		
@@ -678,8 +677,6 @@ function drawRegions(bid) {
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
 			let y = scaledY0; // Minimo tra le coordinate Y per ottenere il lato superiore
-			let widthRect = abs(scaledX1-scaledX0); // Differenza assoluta per la larghezza
-			let heightRect = abs(scaledY1-scaledY0); // Differenza assoluta per l'altezza
 			
 			// Disegna il punto
 			//fill(0, 255, 0);
@@ -792,7 +789,7 @@ function updateInputsFromBoardDataRegion() {
 	dataentry[2].value = roundTo(r.x1[selectedRectangle], 1);
 	dataentry[3].value = roundTo(r.y1[selectedRectangle], 1);
 	dataentry[4].value = roundTo(r.enabled[selectedRectangle], 1);
-	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);
+	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);			
 }
 
 let dragging = false;
