@@ -231,8 +231,8 @@ class LD2461:
             result['lista_x'].append(self.persons[i]["x"]/10)
             result['lista_y'].append(self.persons[i]["y"]/10)
             
-        print(f'radar_x: {result['lista_x']}')
-        print(f'radar_y: {result['lista_y']}')   
+        #print(f'radar_x: {result['lista_x']}')
+        #print(f'radar_y: {result['lista_y']}')   
         self.callback(GET_COORDINATES, result, datalen)
         
     def get_coordinatesFromRAM(self):
@@ -330,7 +330,10 @@ class LD2461:
         self.regions = regions
         self.get_version()
         time.sleep(0.05)
-        self.get_regions()# sovrascrive tutti i campi di regions tranne enabled!
+        #self.get_regions()# sovrascrive tutti i campi di regions tranne enabled!
+        self.set_region(self.get_regionFromRAM(0))
+        self.set_region(self.get_regionFromRAM(1))
+        self.set_region(self.get_regionFromRAM(2))
         time.sleep(0.05)
         self.get_reporting()
         time.sleep(0.05)
@@ -386,8 +389,8 @@ class LD2461:
             self.regions[index]["x3"] = self.limit_value(int(float(v["x0"])*10))
             self.regions[index]["y3"] = self.limit_value(int(float(v["y1"])*10))
                  
-        if not int(v["enabled"]):
-            self.regions[index]["type"] = 0x00
+        #if not int(v["enabled"]):
+        #    self.regions[index]["type"] = 0x00
         
         print('regionnew', self.regions[index])
         # Prepara la sequenza di byte in big endian da inviare sulla seriale
