@@ -42,11 +42,7 @@ class LD2461:
             {"enabled": 0, "narea": 2, "type": 0, "x0": 0, "y0": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "x3": 0, "y3": 0},
             {"enabled": 0, "narea": 3, "type": 0, "x0": 0, "y0": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "x3": 0, "y3": 0}
         ]
-        self.ntargets = [
-            {"n": 0.0},
-            {"n": 0.0},
-            {"n": 0.0}
-        ]
+        self.ntargets = [0.0, 0.0, 0.0]
         
         self.fw = [
             0,
@@ -249,8 +245,8 @@ class LD2461:
     def process_occurrences(self, frame_data):
         for i in range(3):  # Ciclo per 2 regioni
             base_index = i + 3 # Calcola l'indice base per ogni gruppo di 1 byte
-            self.ntargets[i]["n"] = frame_data[base_index]
-        self.callback(GET_NUM_TARGETS, [self.ntargets[0]["n"], self.ntargets[1]["n"], self.ntargets[2]["n"]], 3)
+            self.ntargets[i] = frame_data[base_index]
+        self.callback(GET_NUM_TARGETS, [self.ntargets[0], self.ntargets[1], self.ntargets[2]], 3)
         
     def process_reporting(self, frame_data):
         self.state = frame_data[0]
