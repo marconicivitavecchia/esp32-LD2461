@@ -77,6 +77,7 @@ S_ON.value(1)
 time.sleep(0.5)
 lista_x = []
 lista_y = []
+lista_n = []
 
 print('Baud rate', radarvel)
 def my_callback(code, val, len):
@@ -84,6 +85,7 @@ def my_callback(code, val, len):
     global lista_y
     global filter_x
     global filter_y
+    global lista_n
     
     newlen = 0
     #print('Len: ', len)
@@ -103,11 +105,15 @@ def my_callback(code, val, len):
             lista_x = [0] * len
             lista_y = [0] * len
     elif code == 0x08:
-        print('Callback get_num_targets!')
-        pubStateAtt("ntargets", val)
+        print('Callback get_num_targets! ', val )
+        #pubStateAtt("ntargets", val)
+        lista_n = val
     elif code == 0x03:
         print('Callback get_reporting type!')
         pubStateAtt("radarmode", val)
+    elif code == 0x02: 
+        print(f'Radar mode feedback: {radar.get_stateFromRAM()}')
+        pubStateAtt("radarmode", radar.get_stateFromRAM())
     elif code == 0x09:
         print('Callback get_FW!')
         pubStateAtt("fw", val)
@@ -226,7 +232,7 @@ def scrivi_servel(valore):
 
 def scrivi_radarMode(valore):
     print(f"Scrivi radarMode a {valore}")
-    radar.set_reporting(valore)
+    radar.set_reporting(int(valore))
 
 def scrivi_radarFactory(valore):
     print(f"Scrivi radarFactory a {valore}")
@@ -365,8 +371,8 @@ t2.setBase(500)
 t2.start()
 t3.setBase(500)
 t3.start()
-t4.setBase(500)
-t4.stop()
+#t4.setBase(500)
+#t4.stop()
 
 sensor = LTR329(i2c)
 ch0, ch1, lux_ch0, lux_ch1, total_lux = sensor.get_lux()
@@ -499,6 +505,7 @@ while True:
                             "radar": {
                                 "x": round_2(lista_x),
                                 "y": round_2(lista_y),
+                                "n": lista_n,
                             },
                         },
                         "boardID": esp32_unique_id,
@@ -510,12 +517,12 @@ while True:
                 # mqtt message publishing
                 client.publish(MQTT_PUSHTOPIC, message)                             
                 #S_ON.value(0)
-       
+        """
         if t4.update() > 1000:
             print("Riacceso radar")
             t2.stop()
             S_ON.value(1)
-         
+        """
     except ValueError as ve:
         print(ve)
     except OSError as e:

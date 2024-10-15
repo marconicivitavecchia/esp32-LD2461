@@ -104,14 +104,14 @@ class LD2461:
             if command == RESTORE_FACTORY:
                 ok = frame_data[2:3]
                 self.callback(command, ok , 1)
-            if command == SET_BAUDRATE:
+            elif command == SET_BAUDRATE:
                 ok = frame_data[3] # offset = 3 for ack
                 if ok:
                     self.baudrate = self.candidate_brate
                     self.uart = UART(1, baudrate=self.baudrate, tx=Pin(self.tx_pin), rx=Pin(self.rx_pin))
                 self.callback(command, self.baudrate , 2)
-            if command == SET_REPORTING:
-                ok = frame_data[2:3]
+            elif command == SET_REPORTING:
+                ok = int(frame_data[3])
                 self.callback(command, ok , 1)
 
         # Resetta il buffer
@@ -249,8 +249,8 @@ class LD2461:
         self.callback(GET_NUM_TARGETS, [self.ntargets[0], self.ntargets[1], self.ntargets[2]], 3)
         
     def process_reporting(self, frame_data):
-        self.state = frame_data[0]
-        #print(f'Reporting stae: {self.state}')
+        self.state = frame_data[3]
+        print(f'Reporting state: {self.state}')
         self.callback(GET_REPORTING, self.state, 1)
         
     def process_read_firmware(self, frame_data):
