@@ -169,8 +169,10 @@ const commandMap = {
 			let rd = boardData[currBoardId].radarData;
 			rd.x = roundArrTo(getFieldIfExists(value,'x'), 2);
 			rd.y = roundArrTo(getFieldIfExists(value,'y'), 2);
+			rd.regions.ntarget = value.n.map(Number);
 			console.log('rd.x ', rd.x);
 			console.log('rd.y ', rd.y);
+			console.log('rd.ntarget ', rd.ntarget);
 		},
 		tempSensor: (value) =>{
 			console.log('tempSensor ', value);
@@ -216,8 +218,7 @@ const commandMap = {
 			},
 		radarmode: (value) => {
 			console.log('Setting radarMode to', value)
-			value = "Inverti " + value;
-			setElem(currBoardId, "radarmode", value);
+			setElem(currBoardId, "radarmode", value, '.sel');
 		},
 		radafactory: () => {
 			console.log('Restoring radar');
@@ -437,9 +438,9 @@ function drawRegions(sketch, bid) {
 				scaledY1 = r.ynr1[i];
 			}
 			//fill(r.color || [255, 0, 0]);
-			 sketch.noFill();
-			 sketch.stroke(r.color[i]);
-			 sketch.rectMode( sketch.CORNERS);
+			sketch.noFill();
+			sketch.stroke(r.color[i]);
+			sketch.rectMode( sketch.CORNERS);
 			
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
@@ -448,12 +449,20 @@ function drawRegions(sketch, bid) {
 			// Disegna il punto
 			//fill(0, 255, 0);
 		
-			 sketch.ellipse(scaledX0, -scaledY0, 5, 5);
+			sketch.ellipse(scaledX0, -scaledY0, 5, 5);
 
-			 sketch.ellipse(scaledX1, -scaledY1, 5, 5);
+			sketch.ellipse(scaledX1, -scaledY1, 5, 5);
 
+			if (r.ntarget[i]==1) {
+				// Imposta il colore di riempimento a rosso con trasparenza (alpha)
+				sketch.fill(255, 0, 0, 127);  // Rosso semitrasparente (alpha=127 su 255)
+			} else {
+				// Imposta un colore di riempimento predefinito (ad esempio bianco)
+				sketch.noFill();
+			}
 			// Ora, ricorda che l'asse Y è invertito con la nuova origine
-			 sketch.rect(x, -y, scaledX1, -scaledY1); // Disegna il rettangolo
+			sketch.rect(x, -y, scaledX1, -scaledY1); // Disegna il rettangolo
+			// Etichette
 		}
 	}
 }
@@ -545,7 +554,7 @@ function createBoardSection(boardID) {
 		<input type="text"  value="0" class="rep">
 		<input type="button" class="send button-blue" value="Invia">
 	</div>
-		<div class='col-1 col-s-12' id='radarmode-${boardID}'>
+	<div class='col-1 col-s-12' id='radarmode-${boardID}'>
 		<div class="txt"><p >Radar mode</p></div>
 		<select name="target" class="sel button-large">
 			<option value="1">Track</option>

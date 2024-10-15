@@ -194,6 +194,7 @@ function connectToBroker() {
 						if ('null' != val){
 							boardData.radarData.x = roundArrTo(getFieldIfExists(val,'x'), 2);
 							boardData.radarData.y = roundArrTo(getFieldIfExists(val,'y'), 2);
+							boardData.radarData.regions.ntarget = val.n.map(Number);
 						}
 						val = data.measures.tempSensor
 						if ('null' != val){
@@ -684,6 +685,14 @@ function drawRegions(bid) {
 			ellipse(scaledX0, -scaledY0, 5, 5);
 
 			ellipse(scaledX1, -scaledY1, 5, 5);
+
+			if (r.ntarget[i]==1) {
+				// Imposta il colore di riempimento a rosso con trasparenza (alpha)
+				fill(255, 0, 0, 127);  // Rosso semitrasparente (alpha=127 su 255)
+			} else {
+				// Imposta un colore di riempimento predefinito (ad esempio bianco)
+				noFill();
+			}
 
 			// Ora, ricorda che l'asse Y è invertito con la nuova origine
 			rect(x, -y, scaledX1, -scaledY1); // Disegna il rettangolo
