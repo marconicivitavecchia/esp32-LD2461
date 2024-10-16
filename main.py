@@ -99,12 +99,10 @@ def my_callback(code, val, len):
             if filter_x.getNumSensors() != len:                
                 filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
                 filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-                #radar.read_all_info(radaregions)
             lista_x = filter_x.update(val.get('lista_x', []), ['emafilter']).get('emafilter')
             lista_y = filter_y.update(val.get('lista_y', []), ['emafilter']).get('emafilter')
     elif code == 0x08:
         #print('Callback get_num_targets! ', val )
-        #pubStateAtt("ntargets", val)
         mode = radar.get_stateFromRAM()
         if mode != 1:
             lista_n = val             
@@ -222,6 +220,11 @@ def scrivi_radarToggle(val):
     else:
         S_ON.value(1)
     leggi_radarState()
+    lista_x = []
+    lista_y = []
+    lista_n = []
+    filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+    filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)        
 # Funzioni di comando
 
 def scrivi_pollTime(valore):
