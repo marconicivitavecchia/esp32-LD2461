@@ -2,7 +2,7 @@
 //const myboard = 'micropython-weather-01seba0264e833638ff4'
 //const broker = 'wss://proxy.marconicloud.it:8884'; // Sostituisci con l'URL del tuo broker MQTT e assicurati che utilizzi wss (WebSocket Secure) se necessario
 //const topic = 'radar/misure'; // Sostituisci con il tuo topic MQTT
-
+    
 // data structure where the measurements sent by the device via MQTT (PUSH mode) are stored
 var boardData = {
 				radarData: {
@@ -44,47 +44,94 @@ var boardData = {
 					total: "N/A",
 				},
 				timestamp: "N/A",
+				polltime: 0,
+				timer: null,
 			};
+
+
+		
+			function startMonostableTimer(timeoutId) {
+				// Resetta il timer precedente se esiste
+				if (timeoutId) {
+					clearTimeout(timeoutId);
+					console.log("Timer resettato");
+				}
+		
+				// Imposta un nuovo timer monostabile
+				timeoutId = setTimeout(function() {
+					console.log("Timer scaduto! Nessun messaggio ricevuto in tempo.");
+				}, timeoutDuration);
+		
+				console.log("Timer avviato. Attendo nuovi messaggi...");
+			}
+		
 			
 var fw = "";
 var n = [0, 0, 0, 0]
 
 function alertUser(color){
 	let connstate = document.getElementById(`connstate`);
-	let msg = connstate.querySelector('.msg');
+	let msg = connstate.querySelector('.connmsg');
 	msg.style.backgroundColor = color;
 	msg.style.color = "white";
 	if(color=="green"){
-		msg.innerHTML = "CONNESSO";
+		msg.value = "MQTT ON";
 	}else{
-		msg.innerHTML = "DISCONESSO";
+		msg.value = "MQTT OFF";
 	}
-	/*
-	let areareset = document.getElementById(`areareset`);
-	areareset.style.backgroundColor = color;
-	let radarinvert = document.getElementById(`radarinvert`);
-	radarinvert.style.backgroundColor = color;
-	let areaenable = document.getElementById(`areaenable`);
-	areaenable.style.backgroundColor = color;
-	let areatypesel = document.getElementById(`areatypesel`);
-	areatypesel.style.backgroundColor = color;
-	let areasel = document.getElementById(`areasel`);
-	areasel.style.backgroundColor = color;
-	let areavertices = document.getElementById(`areavertices`);
-	areavertices.style.backgroundColor = color;
-	let radarstate = document.getElementById(`radarstate`);
-	radarstate.style.backgroundColor = color;
-	let radarfactory = document.getElementById(`radarfactory`);
-	radarfactory.style.backgroundColor =color;
-	let radarmode = document.getElementById(`radarmode`);
-	radarmode.style.backgroundColor = color;
-	let servel = document.getElementById(`servel`)
-	servel.style.backgroundColor = color;
-	let poll1div = document.getElementById(`poll1`);
-	poll1div.style.backgroundColor = color;
-	*/
 }
 
+// Definisci la classe MonostableTimer
+class MonostableTimer {
+	constructor(timeoutDuration, callback) {
+		this.timeoutDuration = timeoutDuration;  // Durata del timer in millisecondi
+		this.callback = callback;  // Funzione da eseguire al termine del timer
+		// this.callback = callback.bind(this);
+		this.timeoutId = null;  // ID del timeout
+	}
+
+	// Avvia o resetta il timer
+	start() {
+		// Se esiste un timer attivo, resettalo
+		if (this.timeoutId) {
+			clearTimeout(this.timeoutId);
+			console.log("Timer resettato");
+		}
+
+		// Imposta un nuovo timer
+		this.timeoutId = setTimeout(() => {
+			// Verifica che la callback sia una funzione prima di chiamarla
+			if (typeof this.callback === 'function') {
+				this.callback();  // Esegue la callback
+			} else {
+				console.error("Callback non è una funzione!");
+			}
+		}, this.timeoutDuration);
+
+		console.log("Timer avviato per " + this.timeoutDuration + " millisecondi.");
+	}
+
+	// Ferma il timer (se necessario)
+	stop() {
+		if (this.timeoutId) {
+			clearTimeout(this.timeoutId);
+			console.log("Timer fermato");
+		}
+		this.timeoutId = null;
+	}
+}
+
+function alertUserIot(color){
+	let iotstate = document.getElementById(`iotstate`);
+	let iotmsg = iotstate.querySelector('.iotmsg');
+	iotmsg.style.backgroundColor = color;
+	iotmsg.style.color = "white";
+	if(color=="green"){
+		iotmsg.value = "Iot ON";
+	}else{
+		iotmsg.value = "Iot OFF";
+	}
+}
 // Map of the functions to be executed on a certain path of the received commands (statuses).
 // They must coincide with the corresponding paths of the JSON object being transmitted.
 // Read-only commands are parameterless and can be invoked in JSON as cells in a command list. For example, with JSON
@@ -104,6 +151,16 @@ const commandMap = {
 					fw = value;
 				},
 				polltime: (value) => {
+					boardData.polltime = Number(value);
+					if(!boardData.timer){
+						boardData.timer = new MonostableTimer(boardData.polltime*2, ()=>{
+							let iotstate = document.getElementById(`iotstate`);
+							let iotmsg = iotstate.querySelector('.iotmsg');
+							iotmsg.style.backgroundColor = "red";
+							iotmsg.style.color = "white";
+							iotmsg.value = "Iot OFF";
+						});
+					}
 					console.log('Setting pollTime to', value);
 					setElem("poll1", millisToTimeString(value), '.poll1');
 				},
@@ -171,6 +228,7 @@ const brokerUrls = [
 
 let currentBrokerIndex = 0;
 let client = null;
+alertUserIot("red");
 
 // Function to connect to MQTT broker
 function connectToBroker() {
@@ -210,7 +268,6 @@ function connectToBroker() {
 		client.on('message', (topic, message) => {
 			let data = JSON.parse(message.toString());
 			let boardID = data.boardID;
-			alertUser("green");
 			
 			if(boardID == boardId){
 				currBoardId = boardID;
@@ -218,6 +275,7 @@ function connectToBroker() {
 				console.log('Topic:', topic);
 				console.log('Pushtopic:', pushtopic);
 				console.log('Statetopic:', statetopic);
+				alertUser("green");
 				
 				if( topic === pushtopic){	   
 					// Update the data structure for this boardId. 
@@ -229,6 +287,10 @@ function connectToBroker() {
 							boardData.radarData.x = roundArrTo(getFieldIfExists(val,'x'), 2);
 							boardData.radarData.y = roundArrTo(getFieldIfExists(val,'y'), 2);
 							boardData.radarData.regions.ntarget = val.n.map(Number);
+							alertUserIot("green");
+							if(boardData.timer){
+								boardData.timer.start();
+							}
 						}
 						val = data.measures.tempSensor
 						if ('null' != val){

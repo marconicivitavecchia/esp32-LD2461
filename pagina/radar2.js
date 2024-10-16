@@ -60,10 +60,10 @@ function connectToBroker() {
 			let boardID = data.boardID;
 			let r;
 			
-			alertUser("green");
 			console.log('Topic:', topic);
 			console.log('Pushtopic:', pushtopic);
 			console.log('Statetopic:', statetopic);
+			alertUser("green");
 			
 			if( topic === pushtopic){
 				// Verifica se esiste già un elemento per questo boardID
@@ -110,11 +110,14 @@ function connectToBroker() {
 							total: "N/A",
 						},
 						timestamp: "N/A",
+						polltime: 0,
+						timer: null,
 					};
 					// Se non esiste, crea una nuova sezione HTML per questo boardID
 					createBoardSection(boardID);
 					createCanvasInstances(boardID); // Crea il canvas per questo boardID
 					setInputListeners(boardID);
+					alertUserIot(boardID, "red");
 				}
 			}else if(topic === statetopic){	
 				console.log('Msg:', data);		
@@ -178,6 +181,10 @@ const commandMap = {
 			console.log('rd.x ', rd.x);
 			console.log('rd.y ', rd.y);
 			console.log('rd.regions.ntarget ', rd.regions.ntarget);
+			alertUserIot(currBoardId, "green");
+			if(boardData[currBoardId].timer){
+				boardData[currBoardId].timer.start();
+			}
 		},
 		tempSensor: (value) =>{
 			console.log('tempSensor ', value);
@@ -215,6 +222,15 @@ const commandMap = {
 			},
 		polltime: (value) => {
 				console.log('Setting pollTime to', value);
+				boardData[currBoardId].polltime = Number(value);
+				if(!boardData[currBoardId].timer){
+					boardData[currBoardId].timer = new MonostableTimer(boardData[currBoardId].polltime*2, ()=>{
+						let iotmsg = document.getElementById(`iotmsg-${currBoardId}`);
+						iotmsg.style.backgroundColor = "red";
+						iotmsg.style.color = "white";
+						iotmsg.value = "Iot OFF";
+					});
+				}
 				setElem(currBoardId, "poll1", millisToTimeString(value), '.poll1');
 			},
 		servel: (value) => {
@@ -582,6 +598,7 @@ function createBoardSection(boardID) {
 			<option value="0">Monitor</option>
 			<option value="1">Filter</option>
 		</select>
+		<div><input id='iotmsg-${boardID}' class="iotmsg button-text" type="text" value="IoT OFF"/></div>
 	</div>
 	<div class='col-2 col-s-12' id='areavertices-${boardID}'>
 		<div class="txt"><p >Vertici area</p></div>
@@ -595,7 +612,9 @@ function createBoardSection(boardID) {
 			<input class="poll1 button-small x1" type="text" />
 			<input class="poll1 button-small y1" type="text"/>
 		</div>
-		<div class='connstate'><p class="msg"></p></div>
+		<div class="button-container" id='connstatel'>
+			<input id='connmsg-${boardID}' class="connmsg button-text" type="text" value="MQTT OFF"/>
+		</div>
 	</div>
 	<div class='col-1 col-s-12' id='areasel-${boardID}'>
 		<div class="txt"><p>Seleziona area</p></div>
@@ -774,18 +793,69 @@ function setInputListeners(boardID) {
 
 function alertUser(color){
 	// Seleziona tutti gli elementi con la classe 'msg'
-    var msglist = document.querySelectorAll(".msg");
+    var msglist = document.querySelectorAll(".connmsg");
 
     // Itera su tutti gli elementi selezionati e imposta lo sfondo giallo
     msglist.forEach(function(elem) {
         elem.style.backgroundColor = color;
 		elem.style.color = "white";
 		if(color=="green"){
-			elem.innerHTML = "CONNESSO";
+			elem.value = "MQTT ON";
 		}else{
-			elem.innerHTML = "DISCONESSO";
+			elem.value = "MQTT OFF";
 		}
     });
+}
+
+function alertUserIot(boardID, color){
+	let iotmsg = document.getElementById(`iotmsg-${boardID}`);
+	iotmsg.style.backgroundColor = color;
+	iotmsg.style.color = "white";
+	if(color=="green"){
+		iotmsg.value = "Iot ON";
+	}else{
+		iotmsg.value = "Iot OFF";
+	}
+}
+
+// Definisci la classe MonostableTimer
+class MonostableTimer {
+	constructor(timeoutDuration, callback) {
+		this.timeoutDuration = timeoutDuration;  // Durata del timer in millisecondi
+		this.callback = callback;  // Funzione da eseguire al termine del timer
+		// this.callback = callback.bind(this);
+		this.timeoutId = null;  // ID del timeout
+	}
+
+	// Avvia o resetta il timer
+	start() {
+		// Se esiste un timer attivo, resettalo
+		if (this.timeoutId) {
+			clearTimeout(this.timeoutId);
+			console.log("Timer resettato");
+		}
+
+		// Imposta un nuovo timer
+		this.timeoutId = setTimeout(() => {
+			// Verifica che la callback sia una funzione prima di chiamarla
+			if (typeof this.callback === 'function') {
+				this.callback();  // Esegue la callback
+			} else {
+				console.error("Callback non è una funzione!");
+			}
+		}, this.timeoutDuration);
+
+		console.log("Timer avviato per " + this.timeoutDuration + " millisecondi.");
+	}
+
+	// Ferma il timer (se necessario)
+	stop() {
+		if (this.timeoutId) {
+			clearTimeout(this.timeoutId);
+			console.log("Timer fermato");
+		}
+		this.timeoutId = null;
+	}
 }
 
 // Massive update of measurement outputs

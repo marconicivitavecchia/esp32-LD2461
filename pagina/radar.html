@@ -93,6 +93,7 @@
 				<option value="0">Monitor</option>
 				<option value="1">Filter</option>
 			</select>
+			<div id='iotstate'><input class="iotmsg button-text" type="text" value="IoT OFF"/></div>
 		</div>
 		<div class='col-2 col-s-12' id='areavertices'>
 			<div class="txt"><p >Vertici area</p></div>
@@ -106,7 +107,9 @@
 				<input class="poll1 button-small x1" type="text" />
 				<input class="poll1 button-small y1" type="text"/>
 			</div>
-			<div id='connstate'><p class="msg"></p></div>
+			<div class="button-container" id='connstate'>
+				<input class="connmsg button-text" type="text" value="MQTT OFF"/>
+			</div>
 		</div>
 		<div class='col-1 col-s-12' id='areasel'>
 			<div class="txt"><p>Seleziona area</p></div>
