@@ -94,26 +94,34 @@ def my_callback(code, val, len):
         pubStateAtt("regions", val)
     elif code == 0x07:
         #print('Callback get_coordinates!')
-        if filter_x.getNumSensors() != len:                
-            filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-            filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-            radar.read_all_info(radaregions)
-        if S_ON.value():
+        mode = radar.get_stateFromRAM()
+        if mode != 2:
+            if filter_x.getNumSensors() != len:                
+                filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+                filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+                #radar.read_all_info(radaregions)
             lista_x = filter_x.update(val.get('lista_x', []), ['emafilter']).get('emafilter')
             lista_y = filter_y.update(val.get('lista_y', []), ['emafilter']).get('emafilter')
-        else:
-            lista_x = [0] * len
-            lista_y = [0] * len
     elif code == 0x08:
-        print('Callback get_num_targets! ', val )
+        #print('Callback get_num_targets! ', val )
         #pubStateAtt("ntargets", val)
-        lista_n = val
+        mode = radar.get_stateFromRAM()
+        if mode != 1:
+            lista_n = val             
     elif code == 0x03:
         print('Callback get_reporting type!')
         pubStateAtt("radarmode", val)
-    elif code == 0x02: 
-        print(f'Radar mode feedback: {radar.get_stateFromRAM()}')
-        pubStateAtt("radarmode", radar.get_stateFromRAM())
+    elif code == 0x02:
+        mode = radar.get_stateFromRAM()
+        print(f'Radar set mode feedback: {mode}')
+        if mode == 1:
+            lista_n = []
+        elif mode == 2:
+            lista_x = []
+            lista_y = []
+            filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+            filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)        
+        pubStateAtt("radarmode", mode)
     elif code == 0x09:
         print('Callback get_FW!')
         pubStateAtt("fw", val)
