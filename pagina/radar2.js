@@ -33,22 +33,26 @@ function connectToBroker() {
 		   // Subscribe to topics, publish messages, etc.
 		   client.subscribe(pushtopic);
 		   client.subscribe(statetopic);
+		   alertUser("green");
 		});
 
 		client.on('offline', (err) => {
 			console.error(`Error with MQTT broker ${brokerUrl}`);
 			// Handle error, optionally switch to the next broker
 			switchToNextBroker();
+			alertUser("red");
 		});
 		
 		client.on('error', (error) => {
 			console.error('Errore di connessione MQTT:', error);
 			//switchToNextBroker();
+			alertUser("red");
 		});
 		
 		client.on('close', () => {
 			console.log('Connessione MQTT chiusa');
 			switchToNextBroker();
+			alertUser("red");
 		});
 		
 		client.on('message', (topic, message) => {
@@ -56,6 +60,7 @@ function connectToBroker() {
 			let boardID = data.boardID;
 			let r;
 			
+			alertUser("green");
 			console.log('Topic:', topic);
 			console.log('Pushtopic:', pushtopic);
 			console.log('Statetopic:', statetopic);
@@ -172,7 +177,7 @@ const commandMap = {
 			rd.regions.ntarget = value.n.map(Number);
 			console.log('rd.x ', rd.x);
 			console.log('rd.y ', rd.y);
-			console.log('rd.ntarget ', rd.ntarget);
+			console.log('rd.regions.ntarget ', rd.regions.ntarget);
 		},
 		tempSensor: (value) =>{
 			console.log('tempSensor ', value);
@@ -590,6 +595,7 @@ function createBoardSection(boardID) {
 			<input class="poll1 button-small x1" type="text" />
 			<input class="poll1 button-small y1" type="text"/>
 		</div>
+		<div class='connstate'><p class="msg"></p></div>
 	</div>
 	<div class='col-1 col-s-12' id='areasel-${boardID}'>
 		<div class="txt"><p>Seleziona area</p></div>
@@ -764,6 +770,22 @@ function setInputListeners(boardID) {
 		pubAtt("areareset", 1, boardID, "write"); //serializza e invia
 		areareset.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}
+}
+
+function alertUser(color){
+	// Seleziona tutti gli elementi con la classe 'msg'
+    var msglist = document.querySelectorAll(".msg");
+
+    // Itera su tutti gli elementi selezionati e imposta lo sfondo giallo
+    msglist.forEach(function(elem) {
+        elem.style.backgroundColor = color;
+		elem.style.color = "white";
+		if(color=="green"){
+			elem.innerHTML = "CONNESSO";
+		}else{
+			elem.innerHTML = "DISCONESSO";
+		}
+    });
 }
 
 // Massive update of measurement outputs

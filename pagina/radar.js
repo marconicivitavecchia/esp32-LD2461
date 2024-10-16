@@ -49,6 +49,41 @@ var boardData = {
 var fw = "";
 var n = [0, 0, 0, 0]
 
+function alertUser(color){
+	let connstate = document.getElementById(`connstate`);
+	let msg = connstate.querySelector('.msg');
+	msg.style.backgroundColor = color;
+	msg.style.color = "white";
+	if(color=="green"){
+		msg.innerHTML = "CONNESSO";
+	}else{
+		msg.innerHTML = "DISCONESSO";
+	}
+	/*
+	let areareset = document.getElementById(`areareset`);
+	areareset.style.backgroundColor = color;
+	let radarinvert = document.getElementById(`radarinvert`);
+	radarinvert.style.backgroundColor = color;
+	let areaenable = document.getElementById(`areaenable`);
+	areaenable.style.backgroundColor = color;
+	let areatypesel = document.getElementById(`areatypesel`);
+	areatypesel.style.backgroundColor = color;
+	let areasel = document.getElementById(`areasel`);
+	areasel.style.backgroundColor = color;
+	let areavertices = document.getElementById(`areavertices`);
+	areavertices.style.backgroundColor = color;
+	let radarstate = document.getElementById(`radarstate`);
+	radarstate.style.backgroundColor = color;
+	let radarfactory = document.getElementById(`radarfactory`);
+	radarfactory.style.backgroundColor =color;
+	let radarmode = document.getElementById(`radarmode`);
+	radarmode.style.backgroundColor = color;
+	let servel = document.getElementById(`servel`)
+	servel.style.backgroundColor = color;
+	let poll1div = document.getElementById(`poll1`);
+	poll1div.style.backgroundColor = color;
+	*/
+}
 
 // Map of the functions to be executed on a certain path of the received commands (statuses).
 // They must coincide with the corresponding paths of the JSON object being transmitted.
@@ -111,12 +146,6 @@ const commandMap = {
 					updateInputsFromBoardDataRegion();
 					updateBoardUI();
 				},
-				ntarget: (value) => {
-					console.log('ntarget receive');
-					boardData.regions.ntarget = value;
-					console.log('ntarget'+value);
-					//setElem("bho", value,'.rep');
-				},
 			},
 			timestamp: () => {
 				
@@ -155,28 +184,33 @@ function connectToBroker() {
 		   // Subscribe to topics, publish messages, etc.
 		   client.subscribe(pushtopic);
 		   client.subscribe(statetopic);
+		   alertUser("green");
 		   pubReadAtt(boardId, "allstate");
 		});
 
 		client.on('offline', (err) => {
 			console.error(`Error with MQTT broker ${brokerUrl}`);
 			// Handle error, optionally switch to the next broker
+			alertUser("red");
 			switchToNextBroker();
 		});
 		
 		client.on('error', (error) => {
 			console.error('Errore di connessione MQTT:', error);
 			//switchToNextBroker();
+			alertUser("red");
 		});
 		
 		client.on('close', () => {
 			console.log('Connessione MQTT chiusa');
 			//switchToNextBroker();
+			alertUser("red");
 		});
 		
 		client.on('message', (topic, message) => {
 			let data = JSON.parse(message.toString());
 			let boardID = data.boardID;
+			alertUser("green");
 			
 			if(boardID == boardId){
 				currBoardId = boardID;
