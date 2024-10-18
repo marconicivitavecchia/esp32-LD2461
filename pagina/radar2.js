@@ -631,8 +631,8 @@ function createBoardSection(boardID) {
 		<input type="button" class="send button-blue" value="Invia">
 	</div>		
 	<div class='col-1 col-s-12' id='radarinvert-${boardID}'>
-		<p class="txt">Inverti griglia</p>
-		<input type="text" value="0">
+		<p>Inverti griglia</p>
+		<input type="text"  class="txt"value="0">
 		<input type="button"  class="send button-blue" value="Invia">
 	</div> `
 	
@@ -772,13 +772,14 @@ function setInputListeners(boardID) {
 	/// RADAR GRID INVERT ///////////////////////////////////////////////////////////////////////////////////////
 	let radarinvert = document.getElementById(`radarinvert-${boardID}`);// Trova l'id del contenitore grid degli input
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	let radarinvertxt = radarinvert.querySelector('.txt');
 	radarinvertsend.onclick = () => {
 		if(boardData[currBoardId].radarData.rot == 0){
 			boardData[currBoardId].radarData.rot = 1;
-			radarinvertsend.value = "Griglia ruotata";
+			radarinvertxt.value = "Ruotata";
 		}else{
 			boardData[currBoardId].radarData.rot = 0;
-			radarinvertsend.value = "Griglia non ruotata";
+			radarinvertxt.value = "Non ruotata";
 		}
 	}
 	/// RADAR ALL AREAS RESET ///////////////////////////////////////////////////////////////////////////////////////
@@ -885,15 +886,15 @@ function expandBoardDataRegion(boardID) {
 	for(let i=0; i<3; i++){
 		// rotated
 		selectedRectangle = i;
-		r.xr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
-		r.yr0[selectedRectangle] = map(r.y0[selectedRectangle], 6, 0, 0, -height1);
-		r.xr1[selectedRectangle] = map(r.x1[selectedRectangle], 6, -6, -width1 * 0.3, width1 * 0.3);
-		r.yr1[selectedRectangle] = map(r.y1[selectedRectangle], 6, 0, 0, -height1);
-		// not rotated
 		r.xnr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
 		r.ynr0[selectedRectangle] = map(r.y0[selectedRectangle], 0, -6, 0, -height1);
 		r.xnr1[selectedRectangle] = map(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
 		r.ynr1[selectedRectangle] = map(r.y1[selectedRectangle  ], 0, -6, 0, -height1);
+
+		r.xr0[selectedRectangle] = -r.xnr0[selectedRectangle];
+		r.yr0[selectedRectangle] = height1 - r.ynr0[selectedRectangle];
+		r.xr1[selectedRectangle] = -r.xnr1[selectedRectangle];
+		r.yr1[selectedRectangle] = height1 - r.ynr1[selectedRectangle];
 		
 		console.log("r.xnr0[i]:"+r.xnr0[selectedRectangle]);
 		console.log("r.ynr0[i] :"+r.ynr0[selectedRectangle]);

@@ -46,25 +46,7 @@ var boardData = {
 				timestamp: "N/A",
 				polltime: 0,
 				timer: null,
-			};
-
-
-		
-			function startMonostableTimer(timeoutId) {
-				// Resetta il timer precedente se esiste
-				if (timeoutId) {
-					clearTimeout(timeoutId);
-					console.log("Timer resettato");
-				}
-		
-				// Imposta un nuovo timer monostabile
-				timeoutId = setTimeout(function() {
-					console.log("Timer scaduto! Nessun messaggio ricevuto in tempo.");
-				}, timeoutDuration);
-		
-				console.log("Timer avviato. Attendo nuovi messaggi...");
-			}
-		
+			};		
 			
 var fw = "";
 var n = [0, 0, 0, 0]
@@ -620,14 +602,16 @@ function setInputListeners() {
 	/// RADAR GRID INVERT ///////////////////////////////////////////////////////////////////////////////////////
 	let radarinvert = document.getElementById('radarinvert');// Trova l'id del contenitore grid degli input
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	let radarinvertxt = radarinvert.querySelector('.txt');
 	radarinvertsend.onclick = () => {
 		if(boardData.radarData.rot == 0){
 			boardData.radarData.rot = 1;
-			radarinvertsend.value = "Griglia ruotata";
+			radarinvertxt.value = "Ruotata";
 		}else{
 			boardData.radarData.rot = 0;
-			radarinvertsend.value = "Griglia non ruotata";
+			radarinvertxt.value = "Non ruotata";
 		}
+		//doRotTransition();
 	}
 	/// RADAR ALL AREAS RESET ///////////////////////////////////////////////////////////////////////////////////////
 	let areareset = document.getElementById('areareset');// Trova l'id del contenitore grid degli input
@@ -668,15 +652,36 @@ function expandBoardDataRegion() {
 	for(let i=0; i<3; i++){
 		// rotated
 		selectedRectangle = i;
+		/*
+		if(boardData.radarData.rot){
+				// Scala i valori per adattarli allo schermo
+				scaledX = map(x, 6, -6, -width * 0.3, width * 0.3);
+				scaledY = map(y, 6, 0, 0, -height);
+			}else{
+				scaledX = map(x, -6, 6, -width * 0.3, width * 0.3);
+				scaledY = map(y, 0, 6, 0, -height);
+			}
 		r.xr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
 		r.yr0[selectedRectangle] = map(r.y0[selectedRectangle], 6, 0, 0, -height1);
 		r.xr1[selectedRectangle] = map(r.x1[selectedRectangle], 6, -6, -width1 * 0.3, width1 * 0.3);
 		r.yr1[selectedRectangle] = map(r.y1[selectedRectangle], 6, 0, 0, -height1);
+		
+		r.xr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.yr0[selectedRectangle] = map(r.y0[selectedRectangle], 6, 0, 0, -height1);
+		r.xr1[selectedRectangle] = map(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.yr1[selectedRectangle] = map(r.y1[selectedRectangle  ], 6, 0, 0, -height1);
+		*/
+		
 		// not rotated
 		r.xnr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
 		r.ynr0[selectedRectangle] = map(r.y0[selectedRectangle], 0, -6, 0, -height1);
 		r.xnr1[selectedRectangle] = map(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
 		r.ynr1[selectedRectangle] = map(r.y1[selectedRectangle  ], 0, -6, 0, -height1);
+
+		r.xr0[selectedRectangle] = -r.xnr0[selectedRectangle];
+		r.yr0[selectedRectangle] = height1 - r.ynr0[selectedRectangle];
+		r.xr1[selectedRectangle] = -r.xnr1[selectedRectangle];
+		r.yr1[selectedRectangle] = height1 - r.ynr1[selectedRectangle];
 		
 		console.log("r.xnr0[i]:"+r.xnr0[selectedRectangle]);
 		console.log("r.ynr0[i] :"+r.ynr0[selectedRectangle]);
@@ -720,6 +725,8 @@ function draw() {
 			x = Number(boardData.radarData.x[i]);
 			y = Number(boardData.radarData.y[i]);
 			
+			//x = 2;
+			//y = 2;
 		
 			if(boardData.radarData.rot){
 				// Scala i valori per adattarli allo schermo
@@ -736,8 +743,11 @@ function draw() {
 			// Etichette
 			fill(255);
 			textSize(12);
-			text(`X: ${x}`, scaledX + 5, scaledY - 20+boardData.radarData.rot*20);
-			text(`Y: ${y}`, scaledX + 5, scaledY - 10+boardData.radarData.rot*20);
+			text(`X: ${x}`, scaledX + 5, scaledY - 20);
+			text(`Y: ${y}`, scaledX + 5, scaledY - 10);
+
+			//text(`X: ${x}`, scaledX + 5, scaledY - 20+boardData.radarData.rot*20);
+			//text(`Y: ${y}`, scaledX + 5, scaledY - 10+boardData.radarData.rot*20);
 		}
 	}
 }
@@ -756,11 +766,13 @@ function drawRegions(bid) {
 			//console.log("r: "+[r.x0[i], r.y0[i], r.x1[i], r.y1[i]]);
 			if(boardData.radarData.rot){
 				// Scala i valori per adattarli allo schermo
+				//console.log("r: "+[r.xr0[i], r.yr0[i], r.xr1[i], r.yr1[i]]);
 				scaledX0 = r.xr0[i];
 				scaledY0 = r.yr0[i];
 				scaledX1 = r.xr1[i];
 				scaledY1 = r.yr1[i];
 			}else{
+				//console.log("r: "+[r.xnr0[i], r.ynr0[i], r.xnr1[i], r.ynr1[i]]);
 				scaledX0 = r.xnr0[i];
 				scaledY0 = r.ynr0[i];
 				scaledX1 = r.xnr1[i];
@@ -902,6 +914,7 @@ let resizing = false;
 let offsetX = 0;
 let offsetY = 0;
 let selectedCorner = null;
+let rotated = false;
 
 function mousePressed() {
 	let scaledX = 0;
@@ -976,14 +989,21 @@ function mouseDragged() {
 	let rect = [];
 
 	if(boardData.radarData.rot){
+		
 		// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
 		scaledX = width/2 - mouseX;
 		scaledY = mouseY;
-
-		rect[0] = r.xnr0[selectedRectangle];
-		rect[1] = r.ynr0[selectedRectangle];
-		rect[2] = r.xnr1[selectedRectangle];
-		rect[3] = r.ynr1[selectedRectangle];
+		/*
+		if(!rotated){
+			rotated = true;
+			scaledY = height -scaledY
+			scaledX = -scaledX;
+		}
+		*/
+		rect[0] = r.xr0[selectedRectangle];
+		rect[1] = r.yr0[selectedRectangle];
+		rect[2] = r.xr1[selectedRectangle];
+		rect[3] = r.yr1[selectedRectangle];
 		
 		if (dragging) {
 			// Move the entire rectangle
@@ -1036,6 +1056,13 @@ function mouseDragged() {
 		// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
 		scaledX = mouseX - width /2;
 		scaledY = height - mouseY;
+		/*
+		if(rotated){
+			rotated = false;
+			scaledY = height -scaledY
+			scaledX = -scaledX;
+		}
+		*/
 		
 		rect[0] = r.xnr0[selectedRectangle];
 		rect[1] = r.ynr0[selectedRectangle];
@@ -1103,6 +1130,23 @@ function mapInverse(value, start2, stop2, start1, stop1) {
   return (value - start2) * (stop1 - start1) / (stop2 - start2) + start1;
 }
 
+function doRotTransition(){
+	rd = boardData.radarData;
+	if(rd.lastrot != rd.rot){
+		scaledY = height -scaledY
+		scaledX = -scaledX;
+	}
+}
+/*
+// not rot
+scaledX = mouseX - width /2;
+scaledY = height - mouseY;
+// rot
+scaledX = width/2 - mouseX;
+scaledY = mouseY;
+
+
+*/
 
 /*
 function map(value, start1, stop1, start2, stop2) {
