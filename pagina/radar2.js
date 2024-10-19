@@ -77,27 +77,47 @@ function connectToBroker() {
 							fw: [0, 0],
 							radarmode: 0,
 							regions: {
-								narea: [0, 0, 0],
+								narea: [1, 2, 3],
 								ntarget: [0, 0, 0],
 								type: [0, 0, 0],
 								x0: [0, 0, 0],
 								y0: [0, 0, 0],
 								x1: [0, 0, 0],
 								y1: [0, 0, 0],
-								color: ['red', 'green', 'blue'],
-								enabled: [0, 0, 0],
-								selected: 1,
-								xr0: [0, 0, 0],
-								yr0: [0, 0, 0],
-								xr1: [0, 0, 0],
-								yr1: [0, 0, 0],
+								color: [[255, 0, 0, 127], [0, 255, 0, 127], [0, 0, 255, 127]],
+								enabled: [1, 1, 0],
+								selected: 0,
 								xnr0: [0, 0, 0],
 								ynr0: [0, 0, 0],
 								xnr1: [0, 0, 0],
 								ynr1: [0, 0, 0],
-								fw: [0, 0],
 							}
 						},
+						/*
+						radarData: {
+							x: [0, 1, 0, 0, 0],
+							y: [2, 3, 0, 0, 0],
+							rot: 0,
+							fw: [0, 0],
+							radarmode: 3,
+							regions: {
+								narea: [1, 2, 3],
+								ntarget: [1, 1, 0],
+								type: [0, 0, 0],
+								x0: [1, 2, 0],
+								y0: [4, 5, 0],
+								x1: [3, 4, 0],
+								y1: [2, 3, 0],
+								color: [[255, 0, 0, 127], [0, 255, 0, 127], [0, 0, 255, 127]],
+								enabled: [1, 1, 0],
+								selected: 0,
+								xnr0: [0, 0, 0],
+								ynr0: [0, 0, 0],
+								xnr1: [0, 0, 0],
+								ynr1: [0, 0, 0],
+							}
+						},
+						*/
 						tempData: {
 							temp: "N/A",
 							press: "N/A",
@@ -446,22 +466,24 @@ function drawRegions(sketch, bid) {
 		//console.log("r.enabled: "+ r);
 		if(r.enabled[i]){
 			//console.log("r: "+[r.x0[i], r.y0[i], r.x1[i], r.y1[i]]);
-			if(boardData[bid].radarData.rot){
+			if(boardData.radarData.rot){// calcola il passaggio dei vertici dal riferimento ruotato al non ruotato
 				// Scala i valori per adattarli allo schermo
-				scaledX0 = r.xr0[i];
-				scaledY0 = r.yr0[i];
-				scaledX1 = r.xr1[i];
-				scaledY1 = r.yr1[i];
-			}else{
+				//console.log("r: "+[r.xr0[i], r.yr0[i], r.xr1[i], r.yr1[i]]);
+				scaledX0 = -r.xnr0[i];
+				scaledY0 = height - r.ynr0[i];
+				scaledX1 = -r.xnr1[i]
+				scaledY1 = height - r.ynr1[i];
+			}else{// lascia i vertici nel riferimento NON ruotato
+				//console.log("r: "+[r.xnr0[i], r.ynr0[i], r.xnr1[i], r.ynr1[i]]);
 				scaledX0 = r.xnr0[i];
 				scaledY0 = r.ynr0[i];
 				scaledX1 = r.xnr1[i];
 				scaledY1 = r.ynr1[i];
 			}
 			//fill(r.color || [255, 0, 0]);
-			sketch.noFill();
-			sketch.stroke(r.color[i]);
-			sketch.rectMode( sketch.CORNERS);
+			noFill();
+			stroke(r.color[i]);
+			rectMode(CORNERS);
 			
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
@@ -476,10 +498,10 @@ function drawRegions(sketch, bid) {
 
 			if (r.ntarget[i]==1) {
 				// Imposta il colore di riempimento a rosso con trasparenza (alpha)
-				sketch.fill(255, 0, 0, 127);  // Rosso semitrasparente (alpha=127 su 255)
+				fill(r.color[i]);  // Rosso semitrasparente (alpha=127 su 255)
 			} else {
 				// Imposta un colore di riempimento predefinito (ad esempio bianco)
-				sketch.noFill();
+				noFill();
 			}
 			// Ora, ricorda che l'asse Y è invertito con la nuova origine
 			sketch.rect(x, -y, scaledX1, -scaledY1); // Disegna il rettangolo
@@ -983,34 +1005,38 @@ function createCanvasInstances(boardID) {
 		sketch.mousePressed = function() {
 			let scaledX = 0;
 			let scaledY = 0;
-			let r = boardData[boardID].radarData.regions;
+			let r = boardData.radarData.regions;
 			let selectedRectangle = r.selected -1;
 			let rect = [];	
 			
-			if(boardData[boardID].radarData.rot){
-				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = sketch.width/2 - sketch.mouseX;
-				scaledY = sketch.mouseY;
-				rect[0] = r.xr0[selectedRectangle];
-				rect[1] = r.yr0[selectedRectangle];
-				rect[2] = r.xr1[selectedRectangle];
-				rect[3] = r.yr1[selectedRectangle];
-			}else{
-				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = sketch.mouseX - sketch.width /2;
-				scaledY = sketch.height - sketch.mouseY;
+			scaledX = mouseX - width /2;
+			scaledY = height - mouseY;
+			
+			if(boardData.radarData.rot){
+				// calcola il passaggio dei vertici dal riferimento ruotato al non ruotato
+				rect[0] = -r.xnr0[selectedRectangle];
+				rect[1] = height - r.ynr0[selectedRectangle];
+				rect[2] = -r.xnr1[selectedRectangle];
+				rect[3] = height - r.ynr1[selectedRectangle];
+				console.log("rect rot----------------------------");
+			}else{		
 				rect[0] = r.xnr0[selectedRectangle];
 				rect[1] = r.ynr0[selectedRectangle];
 				rect[2] = r.xnr1[selectedRectangle];
 				rect[3] = r.ynr1[selectedRectangle];
+				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
+				console.log("rect no rot----------------------------");
 			}
 			
+			///---------CALCOLO NEL RIFERIMENTO NON RUOTATO--------------------------
+			console.log("mousePressed----------------------------");
 			console.log("rect: "+rect);
-			console.log("scaledX: "+scaledX);
-			console.log("scaledY: "+scaledY);
-			console.log("mousePressed");
+			console.log("scaledX-rect[0]: "+scaledX+"-"+rect[0]);
+			console.log("scaledY- rect[1]: "+scaledY+"-"+rect[1]);
 			// Check if mouse is near any corner for resizing
 			const resizeThreshold = 10;
+			let inside1 = scaledX > rect[0] && scaledX < rect[2] && scaledY > rect[3] && scaledY < rect[1];
+			let inside2 = scaledX > rect[2] && scaledX < rect[0] && scaledY > rect[1] && scaledY < rect[3];
 			if (isNearCorner(scaledX, scaledY, rect[0], rect[1], resizeThreshold)) {
 				dragging = false;
 				resizing = true;
@@ -1031,8 +1057,9 @@ function createCanvasInstances(boardID) {
 				resizing = true;
 				selectedCorner = 'bottomRight';
 				console.log("Near bottomRight");
-			} else if (scaledX > rect[0] && scaledX < rect[2] && scaledY > rect[3] && scaledY < rect[1]) {
-				sketch.cursor("grab");
+			} else if (inside1 || inside2) {
+		//(Math.abs(scaledX - rect[0]) > 0 && Math.abs(scaledX - rect[2]) < 0 && Math.abs(scaledY - rect[3]) > 0 && Math.abs(scaledY - rect[1]) < 0) 
+				cursor("grab");
 				console.log("Near inside for dragging");
 				// Otherwise check if inside the rectangle for dragging 
 				// Traslazione
@@ -1041,121 +1068,83 @@ function createCanvasInstances(boardID) {
 				offsetY = scaledY - rect[1];
 				console.log("offset: "+offsetX+" - "+offsetY);
 			}else{
-				sketch.cursor(sketch.ARROW);
+				cursor(ARROW);
 			}
 		}
 		
 		sketch.mouseDragged = function() {
 			let scaledX = 0;
 			let scaledY = 0;
-			let r = boardData[boardID].radarData.regions;
+			let r = boardData.radarData.regions;
 			let selectedRectangle = r.selected -1;
 			let rect = [];
-		
-			if(boardData[boardID].radarData.rot){
-				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = sketch.width/2 - sketch.mouseX;
-				scaledY = sketch.mouseY;
 
+			scaledX = mouseX - width /2;
+			scaledY = height - mouseY;
+			
+			if(boardData.radarData.rot){
+				// calcola il passaggio del rettangolo dal riferimento ruotato al non ruotato
+				rect[0] = -r.xnr0[selectedRectangle];
+				rect[1] = height - r.ynr0[selectedRectangle];
+				rect[2] = -r.xnr1[selectedRectangle];
+				rect[3] = height - r.ynr1[selectedRectangle];
+				console.log("rect rot----------------------------");
+			}else{		
 				rect[0] = r.xnr0[selectedRectangle];
 				rect[1] = r.ynr0[selectedRectangle];
 				rect[2] = r.xnr1[selectedRectangle];
 				rect[3] = r.ynr1[selectedRectangle];
-							
-				if (dragging) {
-					// Move the entire rectangle
-					let widthdr = rect[2] - rect[0];
-					let heightdr = rect[3] - rect[1];
-
-					r.xr0[selectedRectangle] = scaledX - offsetX;
-					r.yr0[selectedRectangle] = scaledY - offsetY;
-					r.xr1[selectedRectangle] = r.xr0[selectedRectangle] + widthdr;
-					r.yr1[selectedRectangle] = r.yr0[selectedRectangle] + heightdr;
-					
-					r.x0[selectedRectangle] = mapInverse(r.xr0, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -sketch.height, 6, 0);
-					r.x1[selectedRectangle] = mapInverse(r.xr1, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -sketch.height, 6, 0);
-					updateInputsFromBoardDataRegion(boardID);
-				} else if (resizing) {
-					// Resize the rectangle based on selected corner
-					if (selectedCorner === 'topLeft') {
-						console.log("drag topLeft");
-						r.xr0[selectedRectangle] = scaledX;
-						r.yr0[selectedRectangle] = scaledY;
-					} else if (selectedCorner === 'topRight') {
-						console.log("drag topRight");
-						r.xr1[selectedRectangle] = scaledX;
-						r.yr0[selectedRectangle] = scaledY;
-					} else if (selectedCorner === 'bottomLeft') {
-						console.log("drag bottomLeft");
-						r.xr0[selectedRectangle] = scaledX;
-						r.yr1[selectedRectangle] = scaledY;
-					} else if (selectedCorner === 'bottomRight') {
-						console.log("drag bottomRight");
-						r.xr1[selectedRectangle] = scaledX;
-						r.yr1[selectedRectangle] = scaledY;
-					}
-					
-					r.x0[selectedRectangle] = mapInverse(r.xr0, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.yr0, 0, -sketch.height, 6, 0);
-					r.x1[selectedRectangle] = mapInverse(r.xr1, -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.yr1, 0, -sketch.height, 6, 0);
-					
-					updateInputsFromBoardDataRegion(boardID);
-				}
+				console.log("rect no rot----------------------------");
+			}
 				
-			}else{
-				// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-				scaledX = sketch.mouseX - sketch.width /2;
-				scaledY = sketch.height - sketch.mouseY;
-				
-				rect[0] = r.xnr0[selectedRectangle];
-				rect[1] = r.ynr0[selectedRectangle];
-				rect[2] = r.xnr1[selectedRectangle];
-				rect[3] = r.ynr1[selectedRectangle];
-				
-				if (dragging) {
+		///---------CALCOLO NEL RIFERIMENTO NON RUOTATO--------------------------		
+			if (dragging) {
 					// Move the entire rectangle
 					let widthd = rect[2] - rect[0];
 					let heightd = rect[3] - rect[1];
-
-					r.xnr0[selectedRectangle] = scaledX - offsetX;
-					r.ynr0[selectedRectangle] = scaledY - offsetY;
-					r.xnr1[selectedRectangle] = r.xnr0[selectedRectangle] + widthd;
-					r.ynr1[selectedRectangle] = r.ynr0[selectedRectangle] + heightd;
-					//console.log("dragging: "+(scaledX - offsetX)+" - "+ (scaledY - offsetY);
-					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -sketch.height, 0, -6);
-					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -sketch.height, 0, -6);
-					updateInputsFromBoardDataRegion(boardID);
-				} else if (resizing) {
-					// Resize the rectangle based on selected corner
-					if (selectedCorner === 'topLeft') {
-						console.log("drag topLeft");
-						r.xnr0[selectedRectangle] = scaledX;
-						r.ynr0[selectedRectangle] = scaledY;
-					} else if (selectedCorner === 'topRight') {
-						console.log("drag topRight");
-						r.xnr1[selectedRectangle] = scaledX;
-						r.ynr0[selectedRectangle] = scaledY;
-					} else if (selectedCorner === 'bottomLeft') {
-						console.log("drag bottomLeft");
-						r.xnr0[selectedRectangle] = scaledX;
-						r.ynr1[selectedRectangle] = scaledY;
-					} else if (selectedCorner === 'bottomRight') {
-						r.xnr1[selectedRectangle] = scaledX;
-						r.ynr1[selectedRectangle] = scaledY;
-					}
-					console.log("resize: "+scaledX+" - "+scaledY);
-					r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -sketch.height, 0, -6);
-					r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -sketch.width * 0.3, sketch.width * 0.3, -6, 6);
-					r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -sketch.height, 0, -6);
-					updateInputsFromBoardDataRegion(boardID);
+					
+					rect[0] = scaledX - offsetX;
+					rect[1] = scaledY - offsetY;
+					rect[2] = rect[0] + widthd;
+					rect[3] = rect[1] + heightd;
+			} else if (resizing) {	
+				// Resize the rectangle based on selected corner
+				if (selectedCorner === 'topLeft') {
+					console.log("drag topLeft");
+					rect[0] = scaledX;
+					rect[1] = scaledY;
+				} else if (selectedCorner === 'topRight') {
+					console.log("drag topRight");
+					rect[2] = scaledX;
+					rect[1] = scaledY;
+				} else if (selectedCorner === 'bottomLeft') {
+					console.log("drag bottomLeft");
+					rect[0] = scaledX;
+					rect[3] = scaledY;
+				} else if (selectedCorner === 'bottomRight') {
+					rect[2] = scaledX;
+					rect[3] = scaledY;
 				}
+				console.log("resize: "+scaledX+" - "+scaledY);
+			}	
+			// passaggio del risultato nel riferimento non ruotato o ruotato
+			if(boardData.radarData.rot){
+				r.xnr0[selectedRectangle] = -rect[0];
+				r.ynr0[selectedRectangle] = height - rect[1];
+				r.xnr1[selectedRectangle] = -rect[2];
+				r.ynr1[selectedRectangle] = height - rect[3];
+			}else{
+				r.xnr0[selectedRectangle] = rect[0];
+				r.ynr0[selectedRectangle] = rect[1];
+				r.xnr1[selectedRectangle] = rect[2];
+				r.ynr1[selectedRectangle] = rect[3];
 			}
+			// calcola i vertici significativi del rettangolo in metri
+			r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
+			r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
+			r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
+			r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
+			updateInputsFromBoardDataRegion();
 		}	
 
 		sketch.mouseReleased = function () {
@@ -1219,11 +1208,9 @@ function updateInputsFromBoardDataRegion(boardID) {
 	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);
 }
 
-
 function mapInverse(value, start2, stop2, start1, stop1) {
   return (value - start2) * (stop1 - start1) / (stop2 - start2) + start1;
 }
-
 
 function map(value, start1, stop1, start2, stop2) {
   return (value - start1) * (stop2 - start2) / (stop1 - start1) + start2;
