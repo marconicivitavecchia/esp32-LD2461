@@ -358,7 +358,7 @@ function switchToNextBroker() {
 // Initial connection attempt
 connectToBroker();
 setInputListeners();
-expandBoardDataRegion();
+//expandBoardDataRegion();
 
 // window.onload = pubReadAtt(boardId, "allState");
 		
