@@ -927,14 +927,14 @@ function mousePressed() {
 	scaledY = height - mouseY;
 	
 	if(boardData.radarData.rot){
-		// traduzione del rettangolo ruotato in una immaggine nel riferimento non ruotato
+		// traduzione del rettangolo ruotato in una immagine nel riferimento non ruotato
 		rect[0] = -r.xnr0[selectedRectangle];
 		rect[1] = height - r.ynr0[selectedRectangle];
 		rect[2] = -r.xnr1[selectedRectangle];
 		rect[3] = height - r.ynr1[selectedRectangle];
 		console.log("rect rot----------------------------");
 	}else{		
-		// traduzione del rettangolo non ruotato in una immaggine nel riferimento non ruotato
+		// traduzione del rettangolo non ruotato in una immagine nel riferimento non ruotato
 		rect[0] = r.xnr0[selectedRectangle];
 		rect[1] = r.ynr0[selectedRectangle];
 		rect[2] = r.xnr1[selectedRectangle];
