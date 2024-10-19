@@ -635,7 +635,6 @@ function setInputListeners() {
 			boardData.radarData.rot = 0;
 			radarinvertxt.value = "Non ruotata";
 		}
-		//doRotTransition();
 	}
 	/// RADAR ALL AREAS RESET ///////////////////////////////////////////////////////////////////////////////////////
 	let areareset = document.getElementById('areareset');// Trova l'id del contenitore grid degli input
@@ -1080,14 +1079,6 @@ function isNearCorner(mx, my, x, y, threshold) {
 
 function mapInverse(value, start2, stop2, start1, stop1) {
   return (value - start2) * (stop1 - start1) / (stop2 - start2) + start1;
-}
-
-function doRotTransition(){
-	rd = boardData.radarData;
-	if(rd.lastrot != rd.rot){
-		scaledY = height -scaledY
-		scaledX = -scaledX;
-	}
 }
 
 function map(value, start1, stop1, start2, stop2) {
