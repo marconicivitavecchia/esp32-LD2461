@@ -150,75 +150,75 @@ function alertUserIot(color){
 // 	},
 // }
 const commandMap = {
-			state: {
-				fw: (value) => {
-					console.log('Setting fw to', value);
-					fw = value;
-				},
-				polltime: (value) => {
-					boardData.polltime = Number(value);
-					if(!boardData.timer){
-						boardData.timer = new MonostableTimer(boardData.polltime*2, ()=>{
-							let iotstate = document.getElementById(`iotstate`);
-							let iotmsg = iotstate.querySelector('.iotmsg');
-							iotmsg.style.backgroundColor = "red";
-							iotmsg.style.color = "white";
-							iotmsg.value = "Iot OFF";
-						});
-					}
-					console.log('Setting pollTime to', value);
-					setElem("poll1", millisToTimeString(value), '.poll1');
-				},
-				servel: (value) => {
-					console.log('Setting servel to', value);
-					setElem("servel", value, '.servel');
-				},
-				radarmode: (value) => {
-					console.log('Setting radarMode to', value)
-					//value = capitalizeFirstLetter(value);
-					setElem("radarmode", '', '');
-				},
-				radarfactory: () => {
-					console.log('radarfactory radar');
-					setElem("radarfactory", "", '.rep');
-				},
-				radarstate: (value) => {
-					console.log('radarstate receive');
-					setElem("radarstate", value,'.rep');
-				},
-				regions: (value) => {
-					console.log('regions receive ', value);
-					// update boardData region from state feedback
-					let r = boardData.radarData.regions;
-					r.x0 = value.x0.map(Number);
-					r.y0 = value.y0.map(Number);
-					r.x1 = value.x1.map(Number);
-					r.y1 = value.y1.map(Number);
-					r.narea = value.narea.map(Number);
-					r.type = value.type.map(Number);
-					r.enabled = value.enabled.map(Number);
+		state: {
+			fw: (value) => {
+				console.log('Setting fw to', value);
+				fw = value;
+			},
+			polltime: (value) => {
+				boardData.polltime = Number(value);
+				if(!boardData.timer){
+					boardData.timer = new MonostableTimer(boardData.polltime*2, ()=>{
+						let iotstate = document.getElementById(`iotstate`);
+						let iotmsg = iotstate.querySelector('.iotmsg');
+						iotmsg.style.backgroundColor = "red";
+						iotmsg.style.color = "white";
+						iotmsg.value = "Iot OFF";
+					});
+				}
+				console.log('Setting pollTime to', value);
+				setElem("poll1", millisToTimeString(value), '.poll1');
+			},
+			servel: (value) => {
+				console.log('Setting servel to', value);
+				setElem("servel", value, '.servel');
+			},
+			radarmode: (value) => {
+				console.log('Setting radarMode to', value)
+				//value = capitalizeFirstLetter(value);
+				setElem("radarmode", '', '');
+			},
+			radarfactory: () => {
+				console.log('radarfactory radar');
+				setElem("radarfactory", "", '.rep');
+			},
+			radarstate: (value) => {
+				console.log('radarstate receive');
+				setElem("radarstate", value,'.rep');
+			},
+			regions: (value) => {
+				console.log('regions receive ', value);
+				// update boardData region from state feedback
+				let r = boardData.radarData.regions;
+				r.x0 = value.x0.map(Number);
+				r.y0 = value.y0.map(Number);
+				r.x1 = value.x1.map(Number);
+				r.y1 = value.y1.map(Number);
+				r.narea = value.narea.map(Number);
+				r.type = value.type.map(Number);
+				r.enabled = value.enabled.map(Number);
 
-					console.log('regions receive ENABLED', r.enabled);
-					setElem("areaenable", '', '');
-					setElem("areatypesel", '', '');
-        			setElem("areavertices", '', '');
-					setElem("areasel", '', '');
-					setElem("areaenable", '', '');
-					expandBoardDataRegion();
-					updateInputsFromBoardDataRegion();
-					updateBoardUI();
-				},
+				console.log('regions receive ENABLED', r.enabled);
+				setElem("areaenable", '', '');
+				setElem("areatypesel", '', '');
+				setElem("areavertices", '', '');
+				setElem("areasel", '', '');
+				setElem("areaenable", '', '');
+				expandBoardDataRegion();
+				updateInputsFromBoardDataRegion();
+				updateBoardUI();
 			},
-			timestamp: () => {
-				
-			},
-			boardID: (val) => {
-				console.log('boardID');
-				let elem = document.getElementById('sensorData');
-				let inputelem = elem.querySelector('.boardID');
-				inputelem.innerHTML = val;
-			},
-		};		
+		},
+		timestamp: () => {
+			
+		},
+		boardID: (val) => {
+			console.log('boardID');
+			let elem = document.getElementById('sensorData');
+			let inputelem = elem.querySelector('.boardID');
+			inputelem.innerHTML = val;
+		},
+	};		
 
 // List of MQTT brokers to connect to
 // the main broker is the preferred broker
@@ -922,17 +922,19 @@ function mousePressed() {
 	let selectedRectangle = r.selected -1;
 	let rect = [];	
 	
+	// passaggio dell'input del mouse al riferimento non ruotato
 	scaledX = mouseX - width /2;
 	scaledY = height - mouseY;
 	
 	if(boardData.radarData.rot){
-		// calcola il passaggio dei vertici dal riferimento ruotato al non ruotato
+		// traduzione del rettangolo ruotato in una immaggine nel riferimento non ruotato
 		rect[0] = -r.xnr0[selectedRectangle];
 		rect[1] = height - r.ynr0[selectedRectangle];
 		rect[2] = -r.xnr1[selectedRectangle];
 		rect[3] = height - r.ynr1[selectedRectangle];
 		console.log("rect rot----------------------------");
 	}else{		
+		// traduzione del rettangolo non ruotato in una immaggine nel riferimento non ruotato
 		rect[0] = r.xnr0[selectedRectangle];
 		rect[1] = r.ynr0[selectedRectangle];
 		rect[2] = r.xnr1[selectedRectangle];
@@ -941,7 +943,7 @@ function mousePressed() {
 		console.log("rect no rot----------------------------");
 	}
 	
-	///---------CALCOLO NEL RIFERIMENTO NON RUOTATO--------------------------
+	///---------CALCOLO DELL'OFFSET NEL RIFERIMENTO NON RUOTATO--------------------------
 	console.log("mousePressed----------------------------");
 	console.log("rect: "+rect);
 	console.log("scaledX-rect[0]: "+scaledX+"-"+rect[0]);
@@ -971,7 +973,6 @@ function mousePressed() {
 		selectedCorner = 'bottomRight';
 		console.log("Near bottomRight");
 	} else if (inside1 || inside2) {
-//(Math.abs(scaledX - rect[0]) > 0 && Math.abs(scaledX - rect[2]) < 0 && Math.abs(scaledY - rect[3]) > 0 && Math.abs(scaledY - rect[1]) < 0) 
 		cursor("grab");
 		console.log("Near inside for dragging");
 		// Otherwise check if inside the rectangle for dragging 
@@ -992,17 +993,19 @@ function mouseDragged() {
 	let selectedRectangle = r.selected -1;
 	let rect = [];
 
+	// passaggio dell'input del mouse al riferimento non ruotato
 	scaledX = mouseX - width /2;
 	scaledY = height - mouseY;
 	
 	if(boardData.radarData.rot){
-		// calcola il passaggio del rettangolo dal riferimento ruotato al non ruotato
+		// traduzione del rettangolo ruotato in una immagine nel riferimento non ruotato
 		rect[0] = -r.xnr0[selectedRectangle];
 		rect[1] = height - r.ynr0[selectedRectangle];
 		rect[2] = -r.xnr1[selectedRectangle];
 		rect[3] = height - r.ynr1[selectedRectangle];
 		console.log("rect rot----------------------------");
 	}else{		
+		// traduzione del rettangolo non ruotato in una immagine nel riferimento non ruotato
 		rect[0] = r.xnr0[selectedRectangle];
 		rect[1] = r.ynr0[selectedRectangle];
 		rect[2] = r.xnr1[selectedRectangle];
@@ -1010,7 +1013,7 @@ function mouseDragged() {
 		console.log("rect no rot----------------------------");
 	}
 		
-///---------CALCOLO NEL RIFERIMENTO NON RUOTATO--------------------------		
+///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO--------------------------		
 	if (dragging) {
 			// Move the entire rectangle
 			let widthd = rect[2] - rect[0];
@@ -1040,24 +1043,25 @@ function mouseDragged() {
 		}
 		console.log("resize: "+scaledX+" - "+scaledY);
 	}	
-	// passaggio del risultato nel riferimento non ruotato o ruotato
 	if(boardData.radarData.rot){
+		// passaggio del risultato nel riferimento ruotato
 		r.xnr0[selectedRectangle] = -rect[0];
 		r.ynr0[selectedRectangle] = height - rect[1];
 		r.xnr1[selectedRectangle] = -rect[2];
 		r.ynr1[selectedRectangle] = height - rect[3];
 	}else{
+		// passaggio del risultato nel riferimento non ruotato
 		r.xnr0[selectedRectangle] = rect[0];
 		r.ynr0[selectedRectangle] = rect[1];
 		r.xnr1[selectedRectangle] = rect[2];
 		r.ynr1[selectedRectangle] = rect[3];
 	}
-	// calcola i vertici significativi del rettangolo in metri
+	// calcola i vertici base del rettangolo in metri
 	r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
 	r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
 	r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
 	r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
-	updateInputsFromBoardDataRegion();
+	updateInputsFromBoardDataRegion();// aggiorna feedback nella GUI
 }
 
 function mouseReleased() {
