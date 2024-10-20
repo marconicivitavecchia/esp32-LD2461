@@ -635,6 +635,7 @@ function setInputListeners() {
 			boardData.radarData.rot = 0;
 			radarinvertxt.value = "Non ruotata";
 		}
+		//doRotTransition();
 	}
 	/// RADAR ALL AREAS RESET ///////////////////////////////////////////////////////////////////////////////////////
 	let areareset = document.getElementById('areareset');// Trova l'id del contenitore grid degli input
@@ -762,6 +763,7 @@ function drawRegions(bid) {
 		//console.log("r.enabled: "+ r);
 		if(r.enabled[i]){
 			//console.log("r: "+[r.x0[i], r.y0[i], r.x1[i], r.y1[i]]);
+			// Il riferimento di stampa è il riferimento non ruotato
 			if(boardData.radarData.rot){// calcola il passaggio dei vertici dal riferimento ruotato al non ruotato
 				// Scala i valori per adattarli allo schermo
 				//console.log("r: "+[r.xr0[i], r.yr0[i], r.xr1[i], r.yr1[i]]);
@@ -926,14 +928,14 @@ function mousePressed() {
 	scaledY = height - mouseY;
 	
 	if(boardData.radarData.rot){
-		// traduzione del rettangolo ruotato in una immagine nel riferimento non ruotato
+		// traduzione del rettangolo ruotato in una immaggine nel riferimento non ruotato
 		rect[0] = -r.xnr0[selectedRectangle];
 		rect[1] = height - r.ynr0[selectedRectangle];
 		rect[2] = -r.xnr1[selectedRectangle];
 		rect[3] = height - r.ynr1[selectedRectangle];
 		console.log("rect rot----------------------------");
 	}else{		
-		// traduzione del rettangolo non ruotato in una immagine nel riferimento non ruotato
+		// traduzione del rettangolo non ruotato in una immaggine nel riferimento non ruotato
 		rect[0] = r.xnr0[selectedRectangle];
 		rect[1] = r.ynr0[selectedRectangle];
 		rect[2] = r.xnr1[selectedRectangle];
@@ -1012,7 +1014,7 @@ function mouseDragged() {
 		console.log("rect no rot----------------------------");
 	}
 		
-///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO--------------------------		
+///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO A PARTIRE DALL'OFFSET--------------------------		
 	if (dragging) {
 			// Move the entire rectangle
 			let widthd = rect[2] - rect[0];
