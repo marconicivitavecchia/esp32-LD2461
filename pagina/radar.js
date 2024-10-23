@@ -4,7 +4,7 @@
 //const topic = 'radar/misure'; // Sostituisci con il tuo topic MQTT
     
 // data structure where the measurements sent by the device via MQTT (PUSH mode) are stored
-var boardData = {
+var boardData = {/*
 				radarData: {
 					x: [0, 0, 0, 0, 0],
 					y: [0, 0, 0, 0, 0],
@@ -20,7 +20,7 @@ var boardData = {
 						x1: [0, 0, 0],
 						y1: [0, 0, 0],
 						color: [[255, 0, 0, 127], [0, 255, 0, 127], [0, 0, 255, 127]],
-						enabled: [0, 0, 0],
+						enabled: [1, 1, 0],
 						selected: 0,
 						xnr0: [0, 0, 0],
 						ynr0: [0, 0, 0],
@@ -28,7 +28,7 @@ var boardData = {
 						ynr1: [0, 0, 0],
 					}
 				},
-				/*
+				*/
 				radarData: {
 					x: [0, 1, 0, 0, 0],
 					y: [2, 3, 0, 0, 0],
@@ -50,9 +50,10 @@ var boardData = {
 						ynr0: [0, 0, 0],
 						xnr1: [0, 0, 0],
 						ynr1: [0, 0, 0],
+						dar : [null, null, null],
 					}
 				},
-				*/
+				
 				tempData: {
 					temp: "N/A",
 					press: "N/A",
@@ -84,6 +85,167 @@ function alertUser(color){
 	}else{
 		msg.value = "MQTT OFF";
 	}
+}
+
+class DragAndResize{
+    constructor(reg, width, height) {
+		this.dragging = false;  // Durata del timer in millisecondi
+		this.resizing = false;  // Funzione da eseguire al termine del timer
+		this.offsetX = 0;  
+        this.offsetY = 0;  
+        this.selectedCorner = null;  
+        this.rotated = false;  
+        this.region = reg;
+        this.rot = false;
+        this.rect = this.region;
+        this.width = width;
+        this.height = height;
+	}
+
+	getRegion(){
+		return this.region;
+	}
+
+    setRotation(rot){
+        this.rot = rot;
+        if(this.rot){
+            // traduzione del rettangolo ruotato in una immaggine nel riferimento non ruotato
+            rect[0] = -this.region[0];
+            rect[1] = this.height - this.region[1];
+            rect[2] = -this.region[2];
+            rect[3] = this.height - this.region[3];
+            console.log("rect rot----------------------------");
+        }else{		
+            // traduzione del rettangolo non ruotato in una immaggine nel riferimento non ruotato
+            rect[0] = this.region[0];
+            rect[1] = this.region[1];
+            rect[2] = this.region[2];
+            rect[3] = this.region[3];
+            // Scala i valori del mouse per adattarli al riferimento dello schermo!!!
+            console.log("rect no rot----------------------------");
+        }
+    }
+
+    mousePressed() {
+        let scaledX = 0;
+        let scaledY = 0;
+        
+		//console.log("mouseX: "+mouseX);
+		//console.log("mouseY: "+mouseY);
+        // passaggio dell'input del mouse al riferimento non ruotato
+        scaledX = mouseX - this.width /2;
+        scaledY = this.height - mouseY;
+        
+        ///---------CALCOLO DELL'OFFSET NEL RIFERIMENTO NON RUOTATO--------------------------
+        console.log("mousePressed----------------------------");
+        console.log("rect: "+this.rect);
+        console.log("scaledX-rect[0]: "+scaledX+"-"+this.rect[0]);
+        console.log("scaledY- rect[1]: "+scaledY+"-"+this.rect[1]);
+        // Check if mouse is near any corner for resizing
+        const resizeThreshold = 10;
+        let inside1 = scaledX > this.rect[0] && scaledX < this.rect[2] && scaledY > this.rect[3] && scaledY < this.rect[1];
+        let inside2 = scaledX > this.rect[2] && scaledX < this.rect[0] && scaledY > this.rect[1] && scaledY < this.rect[3];
+        if (this.isNearCorner(scaledX, scaledY, this.rect[0], this.rect[1], resizeThreshold)) {
+            this.dragging = false;
+            this.resizing = true;
+            this.selectedCorner = 'topLeft';
+            console.log("Near topleft");
+        } else if (this.isNearCorner(scaledX, scaledY, this.rect[2], this.rect[1], resizeThreshold)) {
+            this.dragging = false;
+            this.resizing = true;
+            this.selectedCorner = 'topRight';
+            console.log("Near topRight");
+        } else if (this.isNearCorner(scaledX, scaledY, this.rect[0], this.rect[3], resizeThreshold)) {
+            this.dragging = false;
+            this.resizing = true;
+            this.selectedCorner = 'bottomLeft';
+            console.log("Near bottomLeft");
+        } else if (this.isNearCorner(scaledX, scaledY, this.rect[2], this.rect[3], resizeThreshold)) {
+            this.dragging = false;
+            this.resizing = true;
+            this.selectedCorner = 'bottomRight';
+            console.log("Near bottomRight");
+        } else if (inside1 || inside2) {
+            cursor("grab");
+            console.log("Near inside for dragging");
+            // Otherwise check if inside the rectangle for dragging 
+            // Traslazione
+            this.dragging = true;
+            this.offsetX = scaledX - this.rect[0]; 
+            this.offsetY = scaledY - this.rect[1];
+            console.log("offset: "+this.offsetX+" - "+this.offsetY);
+        }else{
+            cursor(ARROW);
+        }
+    }
+
+    mouseDragged() {
+        let scaledX = 0;
+        let scaledY = 0;
+
+        // passaggio dell'input del mouse al riferimento non ruotato
+        scaledX = mouseX - this.width /2;
+        scaledY = this.height - mouseY;
+          
+    ///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO A PARTIRE DALL'OFFSET--------------------------		
+        if (this.dragging) {
+                // Move the entire rectangle
+                let widthd = this.rect[2] - this.rect[0];
+                let heightd = this.rect[3] - this.rect[1];
+                
+                this.rect[0] = scaledX - this.offsetX;
+                this.rect[1] = scaledY - this.offsetY;
+                this.rect[2] = this.rect[0] + widthd;
+                this.rect[3] = this.rect[1] + heightd;
+        } else if (this.resizing) {	
+            // Resize the rectangle based on selected corner
+            if (this.selectedCorner === 'topLeft') {
+                console.log("drag topLeft");
+                this.rect[0] = scaledX;
+                this.rect[1] = scaledY;
+            } else if (this.selectedCorner === 'topRight') {
+                console.log("drag topRight");
+                this.rect[2] = scaledX;
+                this.rect[1] = scaledY;
+            } else if (this.selectedCorner === 'bottomLeft') {
+                console.log("drag bottomLeft");
+                this.rect[0] = scaledX;
+                this.rect[3] = scaledY;
+            } else if (this.selectedCorner === 'bottomRight') {
+                this.rect[2] = scaledX;
+                this.rect[3] = scaledY;
+            }
+            console.log("resize: "+scaledX+" - "+scaledY);
+        }	
+        if(this.rot){
+            // passaggio del risultato nel riferimento ruotato
+            this.region[0] = -this.rect[0];
+            this.region[1] =  this.height - this.rect[1];
+            this.region[2] =  -this.rect[2];
+            this.region[3] =  this.height - this.rect[3];
+        }else{
+            // passaggio del risultato nel riferimento non ruotato
+            this.region[0] = this.rect[0];
+            this.region[1] = this.rect[1];
+            this.region[2] = this.rect[2];
+            this.region[3] = this.rect[3];
+        }
+		return this.region;
+    }
+
+    mouseReleased() {
+        this.dragging = false;
+        this.resizing = false;
+        this.selectedCorner = null;
+        cursor(ARROW);
+    }
+
+    // Utility to check if mouse is near a corner for resizing
+    isNearCorner(mx, my, x, y, threshold) {
+        let d = dist(mx, my, x, y);
+        console.log("Dist: "+d);
+        return d  < threshold;
+    }
 }
 
 // Definisci la classe MonostableTimer
@@ -358,7 +520,7 @@ function switchToNextBroker() {
 // Initial connection attempt
 connectToBroker();
 setInputListeners();
-//expandBoardDataRegion();
+expandBoardDataRegion();// for local test only
 
 // window.onload = pubReadAtt(boardId, "allState");
 		
@@ -677,16 +839,21 @@ function expandBoardDataRegion() {	// espande nel riferimento NON ruotato
 		// rotated
 		selectedRectangle = i;		
 		// not rotated
-		r.xnr0[selectedRectangle] = map(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
-		r.ynr0[selectedRectangle] = map(r.y0[selectedRectangle], 0, -6, 0, -height1);
-		r.xnr1[selectedRectangle] = map(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
-		r.ynr1[selectedRectangle] = map(r.y1[selectedRectangle  ], 0, -6, 0, -height1);
+		r.xnr0[selectedRectangle] = map2(r.x0[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.ynr0[selectedRectangle] = map2(r.y0[selectedRectangle], 0, -6, 0, -height1);
+		r.xnr1[selectedRectangle] = map2(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
+		r.ynr1[selectedRectangle] = map2(r.y1[selectedRectangle  ], 0, -6, 0, -height1);
 	
 		console.log("r.xnr0[i]:"+r.xnr0[selectedRectangle]);
 		console.log("r.ynr0[i] :"+r.ynr0[selectedRectangle]);
 		console.log("r.xnr1[i] :"+r.xnr1[selectedRectangle]);
 	}
 	console.log("r.ynr1[i] :"+r.ynr1[selectedRectangle]);
+	r.dar = [
+			new DragAndResize([r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width1, height1), 
+			new DragAndResize([r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width1, height1), 
+			new DragAndResize([r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width1, height1) 
+	];
 }
 
 function setup() {
@@ -909,180 +1076,46 @@ function updateInputsFromBoardDataRegion() {
 	dataentry[5].value = roundTo(r.type[selectedRectangle], 1);			
 }
 
-let dragging = false;
-let resizing = false;
-let offsetX = 0;
-let offsetY = 0;
-let selectedCorner = null;
-let rotated = false;
-
 function mousePressed() {
-	let scaledX = 0;
-	let scaledY = 0;
 	let r = boardData.radarData.regions;
 	let selectedRectangle = r.selected -1;
-	let rect = [];	
-	
-	// passaggio dell'input del mouse al riferimento non ruotato
-	scaledX = mouseX - width /2;
-	scaledY = height - mouseY;
-	
-	if(boardData.radarData.rot){
-		// traduzione del rettangolo ruotato in una immaggine nel riferimento non ruotato
-		rect[0] = -r.xnr0[selectedRectangle];
-		rect[1] = height - r.ynr0[selectedRectangle];
-		rect[2] = -r.xnr1[selectedRectangle];
-		rect[3] = height - r.ynr1[selectedRectangle];
-		console.log("rect rot----------------------------");
-	}else{		
-		// traduzione del rettangolo non ruotato in una immaggine nel riferimento non ruotato
-		rect[0] = r.xnr0[selectedRectangle];
-		rect[1] = r.ynr0[selectedRectangle];
-		rect[2] = r.xnr1[selectedRectangle];
-		rect[3] = r.ynr1[selectedRectangle];
-		// Scala i valori del mouse per adattarli al riferimento dello schermo!!!
-		console.log("rect no rot----------------------------");
-	}
-	
-	///---------CALCOLO DELL'OFFSET NEL RIFERIMENTO NON RUOTATO--------------------------
-	console.log("mousePressed----------------------------");
-	console.log("rect: "+rect);
-	console.log("scaledX-rect[0]: "+scaledX+"-"+rect[0]);
-	console.log("scaledY- rect[1]: "+scaledY+"-"+rect[1]);
-	// Check if mouse is near any corner for resizing
-	const resizeThreshold = 10;
-	let inside1 = scaledX > rect[0] && scaledX < rect[2] && scaledY > rect[3] && scaledY < rect[1];
-	let inside2 = scaledX > rect[2] && scaledX < rect[0] && scaledY > rect[1] && scaledY < rect[3];
-	if (isNearCorner(scaledX, scaledY, rect[0], rect[1], resizeThreshold)) {
-		dragging = false;
-		resizing = true;
-		selectedCorner = 'topLeft';
-		console.log("Near topleft");
-	} else if (isNearCorner(scaledX, scaledY, rect[2], rect[1], resizeThreshold)) {
-		dragging = false;
-		resizing = true;
-		selectedCorner = 'topRight';
-		console.log("Near topRight");
-	} else if (isNearCorner(scaledX, scaledY, rect[0], rect[3], resizeThreshold)) {
-		dragging = false;
-		resizing = true;
-		selectedCorner = 'bottomLeft';
-		console.log("Near bottomLeft");
-	} else if (isNearCorner(scaledX, scaledY, rect[2], rect[3], resizeThreshold)) {
-		dragging = false;
-		resizing = true;
-		selectedCorner = 'bottomRight';
-		console.log("Near bottomRight");
-	} else if (inside1 || inside2) {
-		cursor("grab");
-		console.log("Near inside for dragging");
-		// Otherwise check if inside the rectangle for dragging 
-		// Traslazione
-		dragging = true;
-		offsetX = scaledX - rect[0]; 
-		offsetY = scaledY - rect[1];
-		console.log("offset: "+offsetX+" - "+offsetY);
-	}else{
-		cursor(ARROW);
-	}
+	//console.log("selectedRectangle mousePressed: "+selectedRectangle);
+	r.dar[selectedRectangle].mousePressed();
 }
 
 function mouseDragged() {
-	let scaledX = 0;
-	let scaledY = 0;
 	let r = boardData.radarData.regions;
 	let selectedRectangle = r.selected -1;
-	let rect = [];
-
-	// passaggio dell'input del mouse al riferimento non ruotato
-	scaledX = mouseX - width /2;
-	scaledY = height - mouseY;
-	
-	if(boardData.radarData.rot){
-		// traduzione del rettangolo ruotato in una immagine nel riferimento non ruotato
-		rect[0] = -r.xnr0[selectedRectangle];
-		rect[1] = height - r.ynr0[selectedRectangle];
-		rect[2] = -r.xnr1[selectedRectangle];
-		rect[3] = height - r.ynr1[selectedRectangle];
-		console.log("rect rot----------------------------");
-	}else{		
-		// traduzione del rettangolo non ruotato in una immagine nel riferimento non ruotato
-		rect[0] = r.xnr0[selectedRectangle];
-		rect[1] = r.ynr0[selectedRectangle];
-		rect[2] = r.xnr1[selectedRectangle];
-		rect[3] = r.ynr1[selectedRectangle];
-		console.log("rect no rot----------------------------");
-	}
-		
-///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO A PARTIRE DALL'OFFSET--------------------------		
-	if (dragging) {
-			// Move the entire rectangle
-			let widthd = rect[2] - rect[0];
-			let heightd = rect[3] - rect[1];
-			
-			rect[0] = scaledX - offsetX;
-			rect[1] = scaledY - offsetY;
-			rect[2] = rect[0] + widthd;
-			rect[3] = rect[1] + heightd;
-	} else if (resizing) {	
-		// Resize the rectangle based on selected corner
-		if (selectedCorner === 'topLeft') {
-			console.log("drag topLeft");
-			rect[0] = scaledX;
-			rect[1] = scaledY;
-		} else if (selectedCorner === 'topRight') {
-			console.log("drag topRight");
-			rect[2] = scaledX;
-			rect[1] = scaledY;
-		} else if (selectedCorner === 'bottomLeft') {
-			console.log("drag bottomLeft");
-			rect[0] = scaledX;
-			rect[3] = scaledY;
-		} else if (selectedCorner === 'bottomRight') {
-			rect[2] = scaledX;
-			rect[3] = scaledY;
-		}
-		console.log("resize: "+scaledX+" - "+scaledY);
-	}	
-	if(boardData.radarData.rot){
-		// passaggio del risultato nel riferimento ruotato
-		r.xnr0[selectedRectangle] = -rect[0];
-		r.ynr0[selectedRectangle] = height - rect[1];
-		r.xnr1[selectedRectangle] = -rect[2];
-		r.ynr1[selectedRectangle] = height - rect[3];
-	}else{
-		// passaggio del risultato nel riferimento non ruotato
-		r.xnr0[selectedRectangle] = rect[0];
-		r.ynr0[selectedRectangle] = rect[1];
-		r.xnr1[selectedRectangle] = rect[2];
-		r.ynr1[selectedRectangle] = rect[3];
-	}
-	// calcola i vertici base del rettangolo in metri
+	//console.log("selectedRectangle dragged: "+selectedRectangle);
+	// seleziona gestore del resizing dell'area corrente
+	let selRect = r.dar[selectedRectangle].mouseDragged();
+	// aggiorna vertici dell'area corrente per la stampa
+	r.xnr0[selectedRectangle] = selRect[0];
+	r.ynr0[selectedRectangle] = selRect[1];
+	r.xnr1[selectedRectangle] = selRect[2];
+	r.ynr1[selectedRectangle] = selRect[3];
+	// calcola i vertici base dell'area corrente in metri
 	r.x0[selectedRectangle] = mapInverse(r.xnr0[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
 	r.y0[selectedRectangle] = mapInverse(r.ynr0[selectedRectangle], 0, -height, 0, -6);
 	r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
 	r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
-	updateInputsFromBoardDataRegion();// aggiorna feedback nella GUI
+	// aggiorna feedback nella GUI
+	updateInputsFromBoardDataRegion();
 }
 
 function mouseReleased() {
-	dragging = false;
-	resizing = false;
-	selectedCorner = null;
-	cursor(ARROW);
-}
-
-// Utility to check if mouse is near a corner for resizing
-function isNearCorner(mx, my, x, y, threshold) {
-	let d = dist(mx, my, x, y);
-	console.log("Dist: "+d);
-	return d  < threshold;
+	let r = boardData.radarData.regions;
+	let selectedRectangle = r.selected -1;
+	//console.log("selectedRectangle released: "+selectedRectangle);
+	r.dar[selectedRectangle].mouseReleased();
 }
 
 function mapInverse(value, start2, stop2, start1, stop1) {
   return (value - start2) * (stop1 - start1) / (stop2 - start2) + start1;
 }
 
-function map(value, start1, stop1, start2, stop2) {
+function map2(value, start1, stop1, start2, stop2) {
   return (value - start1) * (stop2 - start2) / (stop1 - start1) + start2;
 }
+
+
