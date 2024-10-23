@@ -97,9 +97,14 @@ class DragAndResize{
         this.rotated = false;  
         this.region = reg;
         this.rot = false;
-        this.rect = this.region;
+        this.rect = [0, 0, 0, 0];
         this.width = width;
         this.height = height;
+		this.rect[0] = this.region[0];
+		this.rect[1] = this.region[1];
+		this.rect[2] = this.region[2];
+		this.rect[3] = this.region[3];
+		console.log("rect init "+this.rect);
 	}
 
 	getRegion(){
@@ -109,18 +114,18 @@ class DragAndResize{
     setRotation(rot){
         this.rot = rot;
         if(this.rot){
-            // traduzione del rettangolo ruotato in una immaggine nel riferimento non ruotato
-            rect[0] = -this.region[0];
-            rect[1] = this.height - this.region[1];
-            rect[2] = -this.region[2];
-            rect[3] = this.height - this.region[3];
+            // traduzione del rettangolo ruotato in una immagine nel riferimento non ruotato
+            this.rect[0] = -this.region[0];
+            this.rect[1] = this.height - this.region[1];
+            this.rect[2] = -this.region[2];
+            this.rect[3] = this.height - this.region[3];
             console.log("rect rot----------------------------");
         }else{		
-            // traduzione del rettangolo non ruotato in una immaggine nel riferimento non ruotato
-            rect[0] = this.region[0];
-            rect[1] = this.region[1];
-            rect[2] = this.region[2];
-            rect[3] = this.region[3];
+            // traduzione del rettangolo non ruotato in una immagine nel riferimento non ruotato
+            this.rect[0] = this.region[0];
+            this.rect[1] = this.region[1];
+            this.rect[2] = this.region[2];
+            this.rect[3] = this.region[3];
             // Scala i valori del mouse per adattarli al riferimento dello schermo!!!
             console.log("rect no rot----------------------------");
         }
@@ -186,7 +191,7 @@ class DragAndResize{
         // passaggio dell'input del mouse al riferimento non ruotato
         scaledX = mouseX - this.width /2;
         scaledY = this.height - mouseY;
-          
+
     ///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO A PARTIRE DALL'OFFSET--------------------------		
         if (this.dragging) {
                 // Move the entire rectangle
@@ -220,9 +225,9 @@ class DragAndResize{
         if(this.rot){
             // passaggio del risultato nel riferimento ruotato
             this.region[0] = -this.rect[0];
-            this.region[1] =  this.height - this.rect[1];
-            this.region[2] =  -this.rect[2];
-            this.region[3] =  this.height - this.rect[3];
+            this.region[1] = this.height - this.rect[1];
+            this.region[2] = -this.rect[2];
+            this.region[3] = this.height - this.rect[3];
         }else{
             // passaggio del risultato nel riferimento non ruotato
             this.region[0] = this.rect[0];
@@ -230,6 +235,8 @@ class DragAndResize{
             this.region[2] = this.rect[2];
             this.region[3] = this.rect[3];
         }
+		console.log("region: "+this.region);
+
 		return this.region;
     }
 
@@ -520,7 +527,7 @@ function switchToNextBroker() {
 // Initial connection attempt
 connectToBroker();
 setInputListeners();
-//expandBoardDataRegion();// for local test only
+expandBoardDataRegion();// for local test only
 
 // window.onload = pubReadAtt(boardId, "allState");
 		
@@ -790,11 +797,15 @@ function setInputListeners() {
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	let radarinvertxt = radarinvert.querySelector('.txt');
 	radarinvertsend.onclick = () => {
+		let r = boardData.radarData.regions;
+		let selectedRectangle = r.selected -1;
 		if(boardData.radarData.rot == 0){
 			boardData.radarData.rot = 1;
+			r.dar[selectedRectangle].setRotation(true);
 			radarinvertxt.value = "Ruotata";
 		}else{
 			boardData.radarData.rot = 0;
+			r.dar[selectedRectangle].setRotation(false);
 			radarinvertxt.value = "Non ruotata";
 		}
 		//doRotTransition();
@@ -1022,6 +1033,14 @@ function resizeCanvasToDiv() {
     
     // Ridimensiona il canvas
     resizeCanvas(width, height);
+	let r = boardData.radarData.regions;
+	r.dar = [
+		new DragAndResize([r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width, height), 
+		new DragAndResize([r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width, height), 
+		new DragAndResize([r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width, height) 
+	];
+	let selectedRectangle = r.selected -1;
+	r.dar[selectedRectangle].setRotation(boardData.radarData.rot);
 }
 
 function convertDateTimeToHumanReadable(dateTimeString) {
