@@ -1050,46 +1050,6 @@ class MonostableTimer {
 	}
 }
 
-// Definisci la classe MonostableTimer
-class MonostableTimer {
-	constructor(timeoutDuration, callback) {
-		this.timeoutDuration = timeoutDuration;  // Durata del timer in millisecondi
-		this.callback = callback;  // Funzione da eseguire al termine del timer
-		// this.callback = callback.bind(this);
-		this.timeoutId = null;  // ID del timeout
-	}
-
-	// Avvia o resetta il timer
-	start() {
-		// Se esiste un timer attivo, resettalo
-		if (this.timeoutId) {
-			clearTimeout(this.timeoutId);
-			console.log("Timer resettato");
-		}
-
-		// Imposta un nuovo timer
-		this.timeoutId = setTimeout(() => {
-			// Verifica che la callback sia una funzione prima di chiamarla
-			if (typeof this.callback === 'function') {
-				this.callback();  // Esegue la callback
-			} else {
-				console.error("Callback non è una funzione!");
-			}
-		}, this.timeoutDuration);
-
-		console.log("Timer avviato per " + this.timeoutDuration + " millisecondi.");
-	}
-
-	// Ferma il timer (se necessario)
-	stop() {
-		if (this.timeoutId) {
-			clearTimeout(this.timeoutId);
-			console.log("Timer fermato");
-		}
-		this.timeoutId = null;
-	}
-}
-
 // Massive update of measurement outputs
 // is used for the massive update of all measurements
 function updateBoardUI(boardID) {
