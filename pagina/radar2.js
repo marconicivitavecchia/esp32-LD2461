@@ -775,12 +775,19 @@ function setInputListeners(boardID) {
 	let radarinvertsend = radarinvert.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
 	let radarinvertxt = radarinvert.querySelector('.txt');
 	radarinvertsend.onclick = () => {
+		let r = boardData[currBoardId].radarData.regions;
 		if(boardData[currBoardId].radarData.rot == 0){
 			boardData[currBoardId].radarData.rot = 1;
 			radarinvertxt.value = "Ruotata";
+			for(i=0; i<3; i++){
+				r.dar[i].setRotation(true);
+			}
 		}else{
 			boardData[currBoardId].radarData.rot = 0;
 			radarinvertxt.value = "Non ruotata";
+			for(i=0; i<3; i++){
+				r.dar[i].setRotation(false);
+			}
 		}
 	}
 	/// RADAR ALL AREAS RESET ///////////////////////////////////////////////////////////////////////////////////////

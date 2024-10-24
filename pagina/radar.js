@@ -815,14 +815,17 @@ function setInputListeners() {
 	let radarinvertxt = radarinvert.querySelector('.txt');
 	radarinvertsend.onclick = () => {
 		let r = boardData.radarData.regions;
-		let selectedRectangle = r.selected -1;
 		if(boardData.radarData.rot == 0){
 			boardData.radarData.rot = 1;
-			r.dar[selectedRectangle].setRotation(true);
+			for(i=0; i<3; i++){
+				r.dar[i].setRotation(true);
+			}
 			radarinvertxt.value = "Ruotata";
 		}else{
 			boardData.radarData.rot = 0;
-			r.dar[selectedRectangle].setRotation(false);
+			for(i=0; i<3; i++){
+				r.dar[i].setRotation(false);
+			}
 			radarinvertxt.value = "Non ruotata";
 		}
 		//doRotTransition();
