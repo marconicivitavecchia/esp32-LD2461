@@ -96,6 +96,7 @@ function connectToBroker() {
 								xnr1: [0, 0, 0],
 								ynr1: [0, 0, 0],
 								fw: [0, 0],
+								dar : [null, null, null],
 							}
 						},
 						tempData: {

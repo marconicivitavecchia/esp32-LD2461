@@ -4,7 +4,7 @@
 //const topic = 'radar/misure'; // Sostituisci con il tuo topic MQTT
     
 // data structure where the measurements sent by the device via MQTT (PUSH mode) are stored
-var boardData = {/*
+var boardData = {///*
 				radarData: {
 					x: [0, 0, 0, 0, 0],
 					y: [0, 0, 0, 0, 0],
@@ -26,9 +26,11 @@ var boardData = {/*
 						ynr0: [0, 0, 0],
 						xnr1: [0, 0, 0],
 						ynr1: [0, 0, 0],
+						dar : [null, null, null],
 					}
 				},
-				*/
+				//*/
+				/*
 				radarData: {
 					x: [0, 1, 0, 0, 0],
 					y: [2, 3, 0, 0, 0],
@@ -53,7 +55,7 @@ var boardData = {/*
 						dar : [null, null, null],
 					}
 				},
-				
+				*/
 				tempData: {
 					temp: "N/A",
 					press: "N/A",
@@ -542,7 +544,7 @@ function switchToNextBroker() {
 // Initial connection attempt
 connectToBroker();
 setInputListeners();
-//expandBoardDataRegion();// for local test only
+expandBoardDataRegion();// for local test only
 
 // window.onload = pubReadAtt(boardId, "allState");
 		
