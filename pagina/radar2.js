@@ -839,8 +839,23 @@ class DragAndResize{
 		console.log("rect init "+this.rect);
 	}
 
+	setResize(width, height){
+		this.width = width;
+        this.height = height;
+		this.setRotation(this.rot)
+	}
+
 	getRegion(){
 		return this.region;
+	}
+
+	setRegion(rectangles){
+		this.region = reg;
+		this.rect[0] = this.region[0];
+		this.rect[1] = this.region[1];
+		this.rect[2] = this.region[2];
+		this.rect[3] = this.region[3];
+		this.setRotation(this.rot)
 	}
 
     setRotation(rot){
@@ -1192,13 +1207,10 @@ function createCanvasInstances(boardID) {
 
             sketch.resizeCanvas(width, height);
 			let r = boardData[boardID].radarData.regions;
-			r.dar = [
-				new DragAndResize([r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width, height), 
-				new DragAndResize([r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width, height), 
-				new DragAndResize([r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width, height) 
-			];
-			let selectedRectangle = r.selected -1;
-			r.dar[selectedRectangle].setRotation(boardData[boardID].radarData.rot);
+
+			for(i=0; i<3; i++){
+				r.dar[i].setResize(width, height); 
+			}
         };
 
 		sketch.mousePressed = function() {
