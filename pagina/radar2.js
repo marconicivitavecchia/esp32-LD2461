@@ -1185,7 +1185,7 @@ function createCanvasInstances(boardID) {
 			let r = boardData[boardID].radarData.regions;
 			let selectedRectangle = r.selected -1;
 			//console.log("selectedRectangle mousePressed: "+selectedRectangle);
-			r.dar[selectedRectangle].mousePressed(sketch);
+			r.dar[selectedRectangle].mousePressed();
 		}
 		
 		sketch.mouseDragged = function(sketch) {
@@ -1197,7 +1197,7 @@ function createCanvasInstances(boardID) {
 			let selectedRectangle = r.selected -1;
 			//console.log("selectedRectangle dragged: "+selectedRectangle);
 			// seleziona gestore del resizing dell'area corrente
-			let selRect = r.dar[selectedRectangle].mouseDragged(sketch);
+			let selRect = r.dar[selectedRectangle].mouseDragged();
 			//console.log("rrrrrrrA: "+selRect);
 			// aggiorna vertici dell'area corrente per la stampa
 			r.xnr0[selectedRectangle] = selRect[0];
@@ -1218,7 +1218,7 @@ function createCanvasInstances(boardID) {
 			let r = boardData[boardID].radarData.regions;
 			let selectedRectangle = r.selected -1;
 			//console.log("selectedRectangle released: "+selectedRectangle);
-			r.dar[selectedRectangle].mouseReleased(sketch);
+			r.dar[selectedRectangle].mouseReleased();
 		}
 	}, `radar-${boardID}`);	
 }
