@@ -4,7 +4,7 @@
 //const topic = 'radar/misure'; // Sostituisci con il tuo topic MQTT
     
 // data structure where the measurements sent by the device via MQTT (PUSH mode) are stored
-var boardData = {///*
+var boardData = {
 				radarData: {
 					x: [0, 0, 0, 0, 0],
 					y: [0, 0, 0, 0, 0],
@@ -21,7 +21,7 @@ var boardData = {///*
 						y1: [0, 0, 0],
 						color: [[255, 0, 0, 127], [0, 255, 0, 127], [0, 0, 255, 127]],
 						enabled: [1, 1, 0],
-						selected: 0,
+						selected: 1,
 						xnr0: [0, 0, 0],
 						ynr0: [0, 0, 0],
 						xnr1: [0, 0, 0],
@@ -29,7 +29,7 @@ var boardData = {///*
 						dar : [null, null, null],
 					}
 				},
-				//*/
+				
 				/*
 				radarData: {
 					x: [0, 1, 0, 0, 0],
@@ -119,7 +119,7 @@ class DragAndResize{
 		return this.region;
 	}
 
-	setRegion(rectangles){
+	setRegion(reg){
 		this.region = reg;
 		this.rect[0] = this.region[0];
 		this.rect[1] = this.region[1];
@@ -880,11 +880,10 @@ function expandBoardDataRegion() {	// espande nel riferimento NON ruotato
 		console.log("r.xnr1[i] :"+r.xnr1[selectedRectangle]);
 	}
 	console.log("r.ynr1[i] :"+r.ynr1[selectedRectangle]);
-	r.dar = [
-			new DragAndResize([r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width1, height1), 
-			new DragAndResize([r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width1, height1), 
-			new DragAndResize([r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width1, height1) 
-	];
+	// Aggiorna le coordinate delle aree
+	for(let i=0; i<3; i++){
+		r.dar[i].setRegion([r.xnr0[i], r.ynr0[i], r.xnr1[i], r.ynr1[i]]);
+	}
 }
 
 function setup() {
@@ -894,6 +893,14 @@ function setup() {
     var width = container.offsetWidth*0.988;
     //let height = width*1.1/2;
 	var height = width*1.2/2;
+
+	let r = boardData.radarData.regions;
+	console.log("INIT DAR: ");
+	r.dar = [
+		new DragAndResize([r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width, height), 
+		new DragAndResize([r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width, height), 
+		new DragAndResize([r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width, height) 
+	];
 	
 	console.log("width: "+width);
 	console.log("height: "+height);
@@ -1115,7 +1122,7 @@ function updateInputsFromBoardDataRegion() {
 function mousePressed() {
 	let r = boardData.radarData.regions;
 	let selectedRectangle = r.selected -1;
-	//console.log("selectedRectangle mousePressed: "+selectedRectangle);
+	console.log("selectedRectangle mousePressed: "+selectedRectangle);
 	r.dar[selectedRectangle].mousePressed();
 }
 

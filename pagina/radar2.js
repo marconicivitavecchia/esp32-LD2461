@@ -828,7 +828,7 @@ function alertUserIot(boardID, color){
 }
 
 class DragAndResize{
-    constructor(reg, width, height) {
+    constructor(sketch, reg, width, height) {
 		this.dragging = false;  // Durata del timer in millisecondi
 		this.resizing = false;  // Funzione da eseguire al termine del timer
 		this.offsetX = 0;  
@@ -844,6 +844,7 @@ class DragAndResize{
 		this.rect[1] = this.region[1];
 		this.rect[2] = this.region[2];
 		this.rect[3] = this.region[3];
+		this.sketch = sketch;
 		console.log("rect init "+this.rect);
 	}
 
@@ -857,7 +858,7 @@ class DragAndResize{
 		return this.region;
 	}
 
-	setRegion(rectangles){
+	setRegion(reg){
 		this.region = reg;
 		this.rect[0] = this.region[0];
 		this.rect[1] = this.region[1];
@@ -886,15 +887,15 @@ class DragAndResize{
         }
     }
 
-    mousePressed(sketch) {
+    mousePressed() {
         let scaledX = 0;
         let scaledY = 0;
         
-		//console.log("sketch.mouseX: "+sketch.mouseX);
-		//console.log("sketch.mouseY: "+sketch.mouseY);
+		//console.log("this.sketch.mouseX: "+this.sketch.mouseX);
+		//console.log("this.sketch.mouseY: "+this.sketch.mouseY);
         // passaggio dell'input del mouse al riferimento non ruotato
-        scaledX = sketch.mouseX - this.width /2;
-        scaledY = this.height - sketch.mouseY;
+        scaledX = this.sketch.mouseX - this.width /2;
+        scaledY = this.height - this.sketch.mouseY;
         
         ///---------CALCOLO DELL'OFFSET NEL RIFERIMENTO NON RUOTATO--------------------------
         console.log("mousePressed----------------------------");
@@ -905,28 +906,28 @@ class DragAndResize{
         const resizeThreshold = 10;
         let inside1 = scaledX > this.rect[0] && scaledX < this.rect[2] && scaledY > this.rect[3] && scaledY < this.rect[1];
         let inside2 = scaledX > this.rect[2] && scaledX < this.rect[0] && scaledY > this.rect[1] && scaledY < this.rect[3];
-        if (this.isNearCorner(sketch, scaledX, scaledY, this.rect[0], this.rect[1], resizeThreshold)) {
+        if (this.isNearCorner(this.sketch, scaledX, scaledY, this.rect[0], this.rect[1], resizeThreshold)) {
             this.dragging = false;
             this.resizing = true;
             this.selectedCorner = 'topLeft';
             console.log("Near topleft");
-        } else if (this.isNearCorner(sketch, scaledX, scaledY, this.rect[2], this.rect[1], resizeThreshold)) {
+        } else if (this.isNearCorner(this.sketch, scaledX, scaledY, this.rect[2], this.rect[1], resizeThreshold)) {
             this.dragging = false;
             this.resizing = true;
             this.selectedCorner = 'topRight';
             console.log("Near topRight");
-        } else if (this.isNearCorner(sketch, scaledX, scaledY, this.rect[0], this.rect[3], resizeThreshold)) {
+        } else if (this.isNearCorner(this.sketch, scaledX, scaledY, this.rect[0], this.rect[3], resizeThreshold)) {
             this.dragging = false;
             this.resizing = true;
             this.selectedCorner = 'bottomLeft';
             console.log("Near bottomLeft");
-        } else if (this.isNearCorner(sketch, scaledX, scaledY, this.rect[2], this.rect[3], resizeThreshold)) {
+        } else if (this.isNearCorner(this.sketch, scaledX, scaledY, this.rect[2], this.rect[3], resizeThreshold)) {
             this.dragging = false;
             this.resizing = true;
             this.selectedCorner = 'bottomRight';
             console.log("Near bottomRight");
         } else if (inside1 || inside2) {
-            cursor("grab");
+            this.sketch.cursor("grab");
             console.log("Near inside for dragging");
             // Otherwise check if inside the rectangle for dragging 
             // Traslazione
@@ -935,17 +936,17 @@ class DragAndResize{
             this.offsetY = scaledY - this.rect[1];
             console.log("offset: "+this.offsetX+" - "+this.offsetY);
         }else{
-            sketch.cursor(sketch.ARROW);
+            this.sketch.cursor(this.sketch.ARROW);
         }
     }
 
-    mouseDragged(sketch) {
+    mouseDragged() {
         let scaledX = 0;
         let scaledY = 0;
 
         // passaggio dell'input del mouse al riferimento non ruotato
-        scaledX = sketch.mouseX - this.width /2;
-        scaledY = this.height - sketch.mouseY;
+        scaledX = this.sketch.mouseX - this.width /2;
+        scaledY = this.height - this.sketch.mouseY;
 
     ///---------CALCOLO DEL DRAG & DROP NEL RIFERIMENTO NON RUOTATO A PARTIRE DALL'OFFSET--------------------------		
         if (this.dragging) {
@@ -995,16 +996,16 @@ class DragAndResize{
 		return this.region;
     }
 
-    mouseReleased(sketch) {
+    mouseReleased() {
         this.dragging = false;
         this.resizing = false;
         this.selectedCorner = null;
-        sketch.cursor(sketch.ARROW);
+        this.sketch.cursor(this.sketch.ARROW);
     }
 
     // Utility to check if mouse is near a corner for resizing
     isNearCorner(sketch, mx, my, x, y, threshold) {
-        let d = sketch.dist(mx, my, x, y);
+        let d = this.sketch.dist(mx, my, x, y);
         console.log("Dist: "+d);
         return d  < threshold;
     }
@@ -1092,11 +1093,10 @@ function expandBoardDataRegion(boardID) {
 		console.log("r.xnr1[i] :"+r.xnr1[selectedRectangle]);
 	}
 	console.log("r.ynr1[i] :"+r.ynr1[selectedRectangle]);
-	r.dar = [
-		new DragAndResize([r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width1, height1), 
-		new DragAndResize([r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width1, height1), 
-		new DragAndResize([r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width1, height1) 
-	];
+	// Aggiorna le coordinate delle aree
+	for(let i=0; i<3; i++){
+		r.dar[i].setRegion([r.xnr0[i], r.ynr0[i], r.xnr1[i], r.ynr1[i]]);
+	}
 }
 
 // Creazione funzione di setup e loop di disegno di ogni canvas
@@ -1117,6 +1117,13 @@ function createCanvasInstances(boardID) {
             let height = width * 1.2 / 2;
 			console.log("width: "+width);
 			console.log("height: "+height);
+
+			let r = boardData[boardID].radarData.regions;
+			r.dar = [
+				new DragAndResize(sketch, [r.xnr0[0], r.ynr0[0], r.xnr1[0], r.ynr1[0]], width, height), 
+				new DragAndResize(sketch, [r.xnr0[1], r.ynr0[1], r.xnr1[1], r.ynr1[1]], width, height), 
+				new DragAndResize(sketch, [r.xnr0[2], r.ynr0[2], r.xnr1[2], r.ynr1[2]], width, height) 
+			];
 
             let canvas = sketch.createCanvas(width, height).parent(container);
         };
@@ -1182,11 +1189,16 @@ function createCanvasInstances(boardID) {
 		}
 		
 		sketch.mouseDragged = function(sketch) {
+			let container = document.getElementById(`radar-${boardID}`);
+            let width = container.offsetWidth * 0.988;
+            let height = width * 1.1 / 2;
+
 			let r = boardData[boardID].radarData.regions;
 			let selectedRectangle = r.selected -1;
 			//console.log("selectedRectangle dragged: "+selectedRectangle);
 			// seleziona gestore del resizing dell'area corrente
 			let selRect = r.dar[selectedRectangle].mouseDragged(sketch);
+			//console.log("rrrrrrrA: "+selRect);
 			// aggiorna vertici dell'area corrente per la stampa
 			r.xnr0[selectedRectangle] = selRect[0];
 			r.ynr0[selectedRectangle] = selRect[1];
@@ -1198,7 +1210,8 @@ function createCanvasInstances(boardID) {
 			r.x1[selectedRectangle] = mapInverse(r.xnr1[selectedRectangle], -width * 0.3, width * 0.3, -6, 6);
 			r.y1[selectedRectangle] = mapInverse(r.ynr1[selectedRectangle], 0, -height, 0, -6);
 			// aggiorna feedback nella GUI
-			updateInputsFromBoardDataRegion();
+			//console.log("rrrrrrr.x0: "+width+"-"+height);
+			updateInputsFromBoardDataRegion(boardID);
 		}	
 
 		sketch.mouseReleased = function (sketch) {
