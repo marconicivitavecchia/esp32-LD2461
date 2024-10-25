@@ -87,10 +87,6 @@ function connectToBroker() {
 								color: ['red', 'green', 'blue'],
 								enabled: [0, 0, 0],
 								selected: 1,
-								xr0: [0, 0, 0],
-								yr0: [0, 0, 0],
-								xr1: [0, 0, 0],
-								yr1: [0, 0, 0],
 								xnr0: [0, 0, 0],
 								ynr0: [0, 0, 0],
 								xnr1: [0, 0, 0],
@@ -449,10 +445,10 @@ function drawRegions(sketch, bid) {
 			//console.log("r: "+[r.x0[i], r.y0[i], r.x1[i], r.y1[i]]);
 			if(boardData[bid].radarData.rot){
 				// Scala i valori per adattarli allo schermo
-				scaledX0 = r.xr0[i];
-				scaledY0 = r.yr0[i];
-				scaledX1 = r.xr1[i];
-				scaledY1 = r.yr1[i];
+				scaledX0 = -r.xnr0[i];
+				scaledY0 = height - r.ynr0[i];
+				scaledX1 = -r.xnr1[i]
+				scaledY1 = height - r.ynr1[i];
 			}else{
 				scaledX0 = r.xnr0[i];
 				scaledY0 = r.ynr0[i];
@@ -1082,11 +1078,6 @@ function expandBoardDataRegion(boardID) {
 		r.ynr0[selectedRectangle] = map2(r.y0[selectedRectangle], 0, -6, 0, -height1);
 		r.xnr1[selectedRectangle] = map2(r.x1[selectedRectangle], -6, 6, -width1 * 0.3, width1 * 0.3);
 		r.ynr1[selectedRectangle] = map2(r.y1[selectedRectangle  ], 0, -6, 0, -height1);
-
-		r.xr0[selectedRectangle] = -r.xnr0[selectedRectangle];
-		r.yr0[selectedRectangle] = height1 - r.ynr0[selectedRectangle];
-		r.xr1[selectedRectangle] = -r.xnr1[selectedRectangle];
-		r.yr1[selectedRectangle] = height1 - r.ynr1[selectedRectangle];
 		
 		console.log("r.xnr0[i]:"+r.xnr0[selectedRectangle]);
 		console.log("r.ynr0[i] :"+r.ynr0[selectedRectangle]);
