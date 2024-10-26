@@ -1172,14 +1172,14 @@ function createCanvasInstances(boardID) {
 			}
         };
 
-		sketch.mousePressed = function(sketch) {
+		sketch.mousePressed = function() {
 			let r = boardData[boardID].radarData.regions;
 			let selectedRectangle = r.selected -1;
 			//console.log("selectedRectangle mousePressed: "+selectedRectangle);
 			r.dar[selectedRectangle].mousePressed();
 		}
 		
-		sketch.mouseDragged = function(sketch) {
+		sketch.mouseDragged = function() {
 			let container = document.getElementById(`radar-${boardID}`);
             let width = container.offsetWidth * 0.988;
             let height = width * 1.1 / 2;
@@ -1205,7 +1205,7 @@ function createCanvasInstances(boardID) {
 			updateInputsFromBoardDataRegion(boardID);
 		}	
 
-		sketch.mouseReleased = function (sketch) {
+		sketch.mouseReleased = function () {
 			let r = boardData[boardID].radarData.regions;
 			let selectedRectangle = r.selected -1;
 			//console.log("selectedRectangle released: "+selectedRectangle);
