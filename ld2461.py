@@ -86,7 +86,7 @@ class LD2461:
         frame_data = self.serial_data['buffer'][self.serial_data['frame_start']:]
         
         # Controllo che frame_data abbia abbastanza byte per accedere all'indice frame_size
-        if len(frame_data) < self.serial_data['size'] - 2:
+        if len(frame_data) <= 2:
             print("Errore: frame_data troppo corto per accedere a command.")
             return
     
