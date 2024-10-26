@@ -17,7 +17,7 @@ const brokerUrls = [
     broker2
 ];
 
-let currentBrokerIndex = 0;
+var currentBrokerIndex = 0;
 var client = null;
 
 // Function to connect to MQTT broker
@@ -39,20 +39,20 @@ function connectToBroker() {
 		client.on('offline', (err) => {
 			console.error(`Error with MQTT broker ${brokerUrl}`);
 			// Handle error, optionally switch to the next broker
-			switchToNextBroker();
 			alertUser("red");
+			//switchToNextBroker();
 		});
 		
 		client.on('error', (error) => {
 			console.error('Errore di connessione MQTT:', error);
 			//switchToNextBroker();
-			alertUser("red");
+			//alertUser("red");
 		});
 		
 		client.on('close', () => {
 			console.log('Connessione MQTT chiusa');
+			alertUser("	#FFA500");
 			switchToNextBroker();
-			alertUser("red");
 		});
 		
 		client.on('message', (topic, message) => {
@@ -152,6 +152,7 @@ function switchToNextBroker() {
     connectToBroker();
 }
 
+alertUser("#FFA500");
 // Initial connection attempt
 connectToBroker();
 
@@ -805,9 +806,9 @@ function alertUser(color){
         elem.style.backgroundColor = color;
 		elem.style.color = "white";
 		if(color=="green"){
-			elem.value = "MQTT ON";
+			msg.value = "MQTT ON "+(currentBrokerIndex+1);
 		}else{
-			elem.value = "MQTT OFF";
+			msg.value = "MQTT OFF "+(currentBrokerIndex+1);
 		}
     });
 }
