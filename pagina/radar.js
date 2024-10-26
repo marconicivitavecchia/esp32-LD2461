@@ -392,7 +392,7 @@ const commandMap = {
 				setElem("areaenable", '', '');
 				expandBoardDataRegion();
 				updateInputsFromBoardDataRegion();
-				updateBoardUI();
+				//updateBoardUI();
 			},
 		},
 		timestamp: () => {
