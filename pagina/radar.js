@@ -76,6 +76,8 @@ var fw = "";
 var n = [0, 0, 0, 0]
 var width;
 var height;
+var mqttAttempts = 0;
+const maxMqttAttempts = 2;
 
 function alertUser(color){
 	let connstate = document.getElementById(`connstate`);
@@ -433,6 +435,7 @@ function connectToBroker() {
 		   client.subscribe(pushtopic);
 		   client.subscribe(statetopic);
 		   alertUser("green");
+		   mqttAttempts = 0;
 		   pubReadAtt(boardId, "allstate");
 		});
 
@@ -451,7 +454,11 @@ function connectToBroker() {
 		
 		client.on('close', () => {
 			console.log('Connessione MQTT chiusa');
-			alertUser("	#FFA500");
+			if(mqttAttempts > maxMqttAttempts){
+				alertUser("red");
+			}else{
+				alertUser("#FFA500");
+			}
 			switchToNextBroker();
 		});
 		
@@ -535,6 +542,7 @@ function switchToNextBroker() {
 
     // Move to the next broker in the list
     currentBrokerIndex = (currentBrokerIndex + 1) % brokerUrls.length;
+	mqttAttempts++;
 
     // Attempt to connect to the next broker
     connectToBroker();

@@ -5,6 +5,8 @@
 var boardData = []; // data structure where the measurements sent by the device via MQTT (PUSH mode) are stored
 var currBoardId;
 var ms;
+var mqttAttempts = 0;
+const maxMqttAttempts = 2;
 
 // List of MQTT brokers to connect to
 // the main broker is the preferred broker
@@ -51,7 +53,11 @@ function connectToBroker() {
 		
 		client.on('close', () => {
 			console.log('Connessione MQTT chiusa');
-			alertUser("	#FFA500");
+			if(mqttAttempts > maxMqttAttempts){
+				alertUser("red");
+			}else{
+				alertUser("#FFA500");
+			}
 			switchToNextBroker();
 		});
 		
@@ -147,6 +153,7 @@ function switchToNextBroker() {
 
     // Move to the next broker in the list
     currentBrokerIndex = (currentBrokerIndex + 1) % brokerUrls.length;
+	mqttAttempts++;
 
     // Attempt to connect to the next broker
     connectToBroker();
