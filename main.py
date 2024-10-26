@@ -401,9 +401,9 @@ beta = 0.25
 while not ok:
     try:
         # WiFi configuration
-        print(f"Connecting to WiFi {WIFI_SSID}...", end="")
+        print(f"Connecting to WiFi...", end="")
         #(ip, wlan_mac, sta_if) = wifi_connect(WIFI_SSID1, WIFI_PASSWORD1)
-        (ip, wlan_mac, sta_if) = wifi_connect(WIFI_SSID1, WIFI_PASSWORD1, WIFI_SSID2, WIFI_PASSWORD2)
+        (ip, wlan_mac, sta_if) = wifi_connect2(WIFI_SSID1, WIFI_PASSWORD1, WIFI_SSID2, WIFI_PASSWORD2)
         print(" Connected!")
         print(f"ip: {ip}, mac: {bin2hex(wlan_mac)}")
         esp32_unique_id = MQTT_CLIENT_ID + bin2hex(wlan_mac)

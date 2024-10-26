@@ -82,8 +82,14 @@ class LD2461:
 
     def process_frame(self):
         frame_size = 2; # dopo inizia il campo command
+        
         frame_data = self.serial_data['buffer'][self.serial_data['frame_start']:]
-            
+        
+        # Controllo che frame_data abbia abbastanza byte per accedere all'indice frame_size
+        if len(frame_data) < self.serial_data['size'] - 2:
+            print("Errore: frame_data troppo corto per accedere a command.")
+            return
+    
         command = frame_data[frame_size]
         len = self.from_unsigned_bytes_big(frame_data[0:2])
         
