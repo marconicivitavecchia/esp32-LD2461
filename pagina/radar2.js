@@ -806,9 +806,9 @@ function alertUser(color){
         elem.style.backgroundColor = color;
 		elem.style.color = "white";
 		if(color=="green"){
-			msg.value = "MQTT ON "+(currentBrokerIndex+1);
+			elem.value = "MQTT "+(currentBrokerIndex+1)+" ON ";
 		}else{
-			msg.value = "MQTT OFF "+(currentBrokerIndex+1);
+			elem.value = "MQTT "+(currentBrokerIndex+1)+" OFF ";
 		}
     });
 }
