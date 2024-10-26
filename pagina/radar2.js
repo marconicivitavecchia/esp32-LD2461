@@ -451,13 +451,16 @@ function drawRegions(sketch, bid) {
 		//console.log("r.enabled: "+ r);
 		if(r.enabled[i]){
 			//console.log("r: "+[r.x0[i], r.y0[i], r.x1[i], r.y1[i]]);
-			if(boardData[bid].radarData.rot){
+			// Il riferimento di stampa è il riferimento non ruotato
+			if(boardData[bid].radarData.rot){// calcola il passaggio dei vertici dal riferimento ruotato al non ruotato
 				// Scala i valori per adattarli allo schermo
+				//console.log("r: "+[r.xr0[i], r.yr0[i], r.xr1[i], r.yr1[i]]);
 				scaledX0 = -r.xnr0[i];
 				scaledY0 = height - r.ynr0[i];
 				scaledX1 = -r.xnr1[i]
 				scaledY1 = height - r.ynr1[i];
-			}else{
+			}else{// lascia i vertici nel riferimento NON ruotato
+				//console.log("r: "+[r.xnr0[i], r.ynr0[i], r.xnr1[i], r.ynr1[i]]);
 				scaledX0 = r.xnr0[i];
 				scaledY0 = r.ynr0[i];
 				scaledX1 = r.xnr1[i];
@@ -466,7 +469,7 @@ function drawRegions(sketch, bid) {
 			//fill(r.color || [255, 0, 0]);
 			sketch.noFill();
 			sketch.stroke(r.color[i]);
-			sketch.rectMode( sketch.CORNERS);
+			sketch.rectMode(sketch.CORNERS);
 			
 			//console.log("rect: "+[scaledX0, scaledY0, scaledX1, scaledY1]);
 			let x = scaledX0; // Minimo tra le coordinate X per ottenere il lato sinistro
@@ -481,14 +484,14 @@ function drawRegions(sketch, bid) {
 
 			if (r.ntarget[i]==1) {
 				// Imposta il colore di riempimento a rosso con trasparenza (alpha)
-				sketch.fill(255, 0, 0, 127);  // Rosso semitrasparente (alpha=127 su 255)
+				sketch.fill(r.color[i]);  // Rosso semitrasparente (alpha=127 su 255)
 			} else {
 				// Imposta un colore di riempimento predefinito (ad esempio bianco)
 				sketch.noFill();
 			}
+
 			// Ora, ricorda che l'asse Y è invertito con la nuova origine
 			sketch.rect(x, -y, scaledX1, -scaledY1); // Disegna il rettangolo
-			// Etichette
 		}
 	}
 }
