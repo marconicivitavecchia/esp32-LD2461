@@ -267,7 +267,7 @@ const commandMap = {
 			setElem(currBoardId, "areasel", '', '');
 			expandBoardDataRegion(currBoardId);
 			updateInputsFromBoardDataRegion(currBoardId);
-			updateBoardUI(currBoardId);
+			//updateBoardUI(currBoardId);
 		},
 		ntarget: (value) => {
 			console.log('ntarget receive');
