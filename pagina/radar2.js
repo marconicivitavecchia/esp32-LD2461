@@ -7,6 +7,7 @@ var currBoardId;
 var ms;
 var mqttAttempts = 0;
 const maxMqttAttempts = 2;
+var backuptimer = null;
 
 // List of MQTT brokers to connect to
 // the main broker is the preferred broker
@@ -21,6 +22,13 @@ const brokerUrls = [
 
 var currentBrokerIndex = 0;
 var client = null;
+let testPrimary = false;
+
+// Funzione per generare un clientId casuale in JS
+function generateClientId(prefix = 'client') {
+    const randomId = Math.random().toString(16).substring(2, 10);  // Stringa casuale esadecimale
+    return `${prefix}_${randomId}`;
+}
 
 // Function to connect to MQTT broker
 function connectToBroker() {
@@ -28,38 +36,64 @@ function connectToBroker() {
     const brokerUrl = brokerUrls[currentBrokerIndex];
 	
 	try{
-		client = mqtt.connect(brokerUrl);
+		const options = {
+			clientId: "generateClientId(prefix = 'radar-')",  // Qui definisci il clientId
+			//username: 'tuo_username',     // Se serve, specifica anche username e password
+			//password: 'tua_password'
+		};
+
+		client = mqtt.connect(brokerUrl, options);
 
 		client.on('connect', () => {
-		   console.log(`Connected to MQTT broker: ${brokerUrl}`);
-		   // Subscribe to topics, publish messages, etc.
-		   client.subscribe(pushtopic);
-		   client.subscribe(statetopic);
-		   alertUser("green");
-		});
-
-		client.on('offline', (err) => {
-			console.error(`Error with MQTT broker ${brokerUrl}`);
-			// Handle error, optionally switch to the next broker
-			alertUser("red");
-			//switchToNextBroker();
-		});
-		
-		client.on('error', (error) => {
-			console.error('Errore di connessione MQTT:', error);
-			//switchToNextBroker();
-			//alertUser("red");
-		});
-		
-		client.on('close', () => {
-			console.log('Connessione MQTT chiusa');
-			if(mqttAttempts > maxMqttAttempts){
-				alertUser("red");
-			}else{
-				alertUser("#FFA500");
-			}
-			switchToNextBroker();
-		});
+			console.log(`Connected to MQTT broker: ${brokerUrl}`);
+			// Subscribe to topics, publish messages, etc.
+			client.subscribe(pushtopic);
+			client.subscribe(statetopic);
+			alertUser("green");
+			mqttAttempts = 0;
+			//pubReadAtt(boardId, "allstate");
+			if(currentBrokerIndex == 1){// mqtt di backup
+				 console.log('Start backup conn timer:');
+				 backuptimer = new MonostableTimer(60000, ()=>{
+					 console.log('Timeout backup conn timer:');
+					 testPrimary =true;
+					 switchToNextBroker();
+				 });
+				 backuptimer.start();
+			 }else{
+				 //backuptimer.stop();
+				 backuptimer = null;
+			 }
+		 });
+ 
+		 client.on('offline', (err) => {
+			 console.error(`Error with MQTT broker ${brokerUrl}`);
+			 // Handle error, optionally switch to the next broker
+			 alertUser("red");
+			 //switchToNextBroker();
+		 });
+		 
+		 client.on('error', (error) => {
+			 console.error('Errore di connessione MQTT:', error);
+			 //if (!client.connected) {
+			 //	client.reconnect();
+			 //}
+			 //switchToNextBroker();
+			 //alertUser("red");
+		 });
+		 
+		 client.on('close', () => {
+			 console.log('Connessione MQTT chiusa');
+			 if(mqttAttempts > maxMqttAttempts){
+				 alertUser("red");
+			 }else{
+				 alertUser("#FFA500");
+			 }
+			 if(testPrimary){
+				 testPrimary = false;
+			 }
+			 switchToNextBroker();
+		 });
 		
 		client.on('message', (topic, message) => {
 			let data = JSON.parse(message.toString());
@@ -90,7 +124,7 @@ function connectToBroker() {
 								y0: [0, 0, 0],
 								x1: [0, 0, 0],
 								y1: [0, 0, 0],
-								color: ['red', 'green', 'blue'],
+								color: [[255, 0, 0, 127], [0, 255, 0, 127], [0, 0, 255, 127]],
 								enabled: [0, 0, 0],
 								selected: 1,
 								xnr0: [0, 0, 0],
@@ -121,6 +155,7 @@ function connectToBroker() {
 					createCanvasInstances(boardID); // Crea il canvas per questo boardID
 					setInputListeners(boardID);
 					alertUserIot(boardID, "red");
+					pubReadAtt(boardID, "allstate")
 				}
 			}else if(topic === statetopic){	
 				console.log('Msg:', data);		
@@ -145,18 +180,22 @@ function getFieldIfExists(obj, field) {
 
 // Function to switch to the next MQTT broker
 function switchToNextBroker() {
-    // Disconnect from the current broker
-    if (client) {
-        client.end();
-        client = null;
-    }
-
-    // Move to the next broker in the list
-    currentBrokerIndex = (currentBrokerIndex + 1) % brokerUrls.length;
-	mqttAttempts++;
-
-    // Attempt to connect to the next broker
-    connectToBroker();
+	if(!testPrimary){
+		// Disconnect from the current broker
+		if (client) {
+			client.end();
+			client = null;
+		}
+	
+		// Move to the next broker in the list
+		currentBrokerIndex = (currentBrokerIndex + 1) % brokerUrls.length;
+		mqttAttempts++;
+	
+		// Attempt to connect to the next broker
+	}else{
+		currentBrokerIndex = 0;
+	}
+	connectToBroker();
 }
 
 alertUser("#FFA500");
@@ -246,9 +285,9 @@ const commandMap = {
 			console.log('Setting radarMode to', value)
 			setElem(currBoardId, "radarmode", value, '.sel');
 		},
-		radafactory: () => {
+		radarfactory: () => {
 			console.log('Restoring radar');
-			setElem(currBoardId, "radafactory", "Invia");
+			setElem(currBoardId, "radarfactory", "Invia");
 		},
 		radarstate: (value) => {
 			console.log('radarstate receive');
@@ -692,8 +731,8 @@ function setInputListeners(boardID) {
 	}
 	/// RADAR AREA FACTORY  ///////////////////////////////////////////////////////////////////////////////////////
 	let radarfactory = document.getElementById(`radarfactory-${boardID}`);// Trova l'id del contenitore grid degli input
-	let radafactorysend = radarfactory.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
-	radafactorysend.onclick = () => {
+	let radarfactorysend = radarfactory.querySelector('.send');// Trova la classe dell'oggetto di input che riceve l'evento utente
+	radarfactorysend.onclick = () => {
 		pubAtt("radarfactory", "1", boardID, "write");
 		radarfactory.style.backgroundColor = "#E67E22"; // activate the wait signal for command feedback
 	}

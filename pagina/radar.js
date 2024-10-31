@@ -78,6 +78,7 @@ var width;
 var height;
 var mqttAttempts = 0;
 const maxMqttAttempts = 2;
+var backuptimer = null;
 
 function alertUser(color){
 	let connstate = document.getElementById(`connstate`);
@@ -364,7 +365,7 @@ const commandMap = {
 			radarmode: (value) => {
 				console.log('Setting radarMode to', value)
 				//value = capitalizeFirstLetter(value);
-				setElem("radarmode", '', '');
+				setElem("radarmode", value, '.sel');
 			},
 			radarfactory: () => {
 				console.log('radarfactory radar');
@@ -421,14 +422,27 @@ const brokerUrls = [
 
 var currentBrokerIndex = 0;
 let client = null;
+let testPrimary = false;
+
+// Funzione per generare un clientId casuale in JS
+function generateClientId(prefix = 'client') {
+    const randomId = Math.random().toString(16).substring(2, 10);  // Stringa casuale esadecimale
+    return `${prefix}_${randomId}`;
+}
 
 // Function to connect to MQTT broker
 function connectToBroker() {
-	console.log(currentBrokerIndex);
+	console.log("Connect temptative: "+currentBrokerIndex);
     const brokerUrl = brokerUrls[currentBrokerIndex];
 	try{
+		const options = {
+			clientId: "generateClientId(prefix = 'radar-')",  // Qui definisci il clientId
+			//username: 'tuo_username',     // Se serve, specifica anche username e password
+			//password: 'tua_password'
+		};
+
 		client = mqtt.connect(brokerUrl);
-	
+
 		client.on('connect', () => {
 		   console.log(`Connected to MQTT broker: ${brokerUrl}`);
 		   // Subscribe to topics, publish messages, etc.
@@ -437,6 +451,18 @@ function connectToBroker() {
 		   alertUser("green");
 		   mqttAttempts = 0;
 		   pubReadAtt(boardId, "allstate");
+		   if(currentBrokerIndex == 1){// mqtt di backup
+				console.log('Start backup conn timer:');
+				backuptimer = new MonostableTimer(60000, ()=>{
+					console.log('Timeout backup conn timer:');
+					testPrimary =true;
+					switchToNextBroker();
+				});
+				backuptimer.start();
+			}else{
+				backuptimer.stop();
+				backuptimer = null;
+			}
 		});
 
 		client.on('offline', (err) => {
@@ -448,6 +474,9 @@ function connectToBroker() {
 		
 		client.on('error', (error) => {
 			console.error('Errore di connessione MQTT:', error);
+			//if (!client.connected) {
+			//	client.reconnect();
+			//}
 			//switchToNextBroker();
 			//alertUser("red");
 		});
@@ -459,12 +488,16 @@ function connectToBroker() {
 			}else{
 				alertUser("#FFA500");
 			}
+			if(testPrimary){
+				testPrimary = false;
+			}
 			switchToNextBroker();
 		});
-		
+	
 		client.on('message', (topic, message) => {
 			let data = JSON.parse(message.toString());
 			let boardID = data.boardID;
+			console.log('arrived from boardId: ', boardId);
 			
 			if(boardID == boardId){
 				currBoardId = boardID;
@@ -484,6 +517,9 @@ function connectToBroker() {
 							boardData.radarData.x = roundArrTo(getFieldIfExists(val,'x'), 2);
 							boardData.radarData.y = roundArrTo(getFieldIfExists(val,'y'), 2);
 							boardData.radarData.regions.ntarget = val.n.map(Number);
+							console.log('x:', boardData.radarData.x);
+							console.log('y:', boardData.radarData.y);
+							console.log('n:', boardData.radarData.regions.ntarget);
 							alertUserIot("green");
 							if(boardData.timer){
 								boardData.timer.start();
@@ -522,7 +558,7 @@ function connectToBroker() {
 		});
 	}catch(e){
 		console.log('Error try:', e.message);
-	}		
+	}
 }
 
 function getFieldIfExists(obj, field) {
@@ -534,18 +570,22 @@ function getFieldIfExists(obj, field) {
 
 // Function to switch to the next MQTT broker
 function switchToNextBroker() {
-    // Disconnect from the current broker
-    if (client) {
-        client.end();
-        client = null;
-    }
-
-    // Move to the next broker in the list
-    currentBrokerIndex = (currentBrokerIndex + 1) % brokerUrls.length;
-	mqttAttempts++;
-
-    // Attempt to connect to the next broker
-    connectToBroker();
+	if(!testPrimary){
+		// Disconnect from the current broker
+		if (client) {
+			client.end();
+			client = null;
+		}
+	
+		// Move to the next broker in the list
+		currentBrokerIndex = (currentBrokerIndex + 1) % brokerUrls.length;
+		mqttAttempts++;
+	
+		// Attempt to connect to the next broker
+	}else{
+		currentBrokerIndex = 0;
+	}
+	connectToBroker();
 }
 
 alertUser("#FFA500");
