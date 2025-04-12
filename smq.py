@@ -34,6 +34,7 @@ class SimpleMovingQuantile:
         a.insert(lo, x)
         
     def update_quantile(self, new_values):
+        #print('num: ',self.num_sensors)
         for i in range(self.num_sensors):
             if len(self.data_queues[i]) == self.window_size:
                 oldest_value = self.data_queues[i].pop(0)

@@ -9,7 +9,8 @@ class MovingStatistics:
         self.window_size = window_size
         self.num_sensors = num_sensors
         self.alpha = alpha
-        self.ema_values = [None] * num_sensors
+        self.ema_values = [0] * num_sensors
+        self.quantile = quantile
         
         self.smm = SimpleMovingMedian(window_size, num_sensors)
         self.sma = SimpleMovingAverage(window_size, num_sensors)
@@ -20,9 +21,12 @@ class MovingStatistics:
     
     def setNumSensors(self, num_sensors):
         self.num_sensors = num_sensors
-        
-    def getNumSensors(self):
-        return self.num_sensors
+        self.smm = SimpleMovingMedian(self.window_size, self.num_sensors)
+        self.sma = SimpleMovingAverage(self.window_size, self.num_sensors)
+        self.smq = SimpleMovingQuantile(self.window_size, self.num_sensors, self.quantile)
+        self.smq1 = SimpleMovingQuantile(self.window_size, self.num_sensors, self.quantile)
+        self.smq2 = SimpleMovingMedianQuantile(self.window_size, self.num_sensors, self.quantile)
+        self.maxmin = MovingMaxMin(self.window_size, self.num_sensors)        
         
     def update(self, new_values, stats_to_update):
         results = {}

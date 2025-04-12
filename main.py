@@ -28,10 +28,9 @@ from ld2461 import *
 from adafruit_ltr329_ltr303 import LTR329
 from movingStatistics2 import *
 
+defaultrate = 9600
 S_ON = Pin(42, Pin.OUT) # PIN RADAR POWER MENAGEMENT
 S_ON.value(1)
-Pin(18, Pin.IN, Pin.PULL_UP)
-#Pin(17, Pin.IN, Pin.PULL_UP)
 # Serial configuration
 print("Configuring serial...")
 # Carica la configurazione all'avvio
@@ -39,9 +38,15 @@ default_config = {
     'poll_time': 2000,
     'serial_speed': 9600,
     'regions': [
-        {"enabled": 0, "narea": 0, "type": 0, "x0": 0, "y0": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "x3": 0, "y3": 0},
-        {"enabled": 0, "narea": 1, "type": 0, "x0": 0, "y0": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "x3": 0, "y3": 0},
-        {"enabled": 0, "narea": 2, "type": 0, "x0": 0, "y0": 0, "x1": 0, "y1": 0, "x2": 0, "y2": 0, "x3": 0, "y3": 0}
+        {"enabled": 0, "narea": 1, "type": 0, "shape": 0, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 2, "type": 0, "shape": 0, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 3, "type": 0, "shape": 0, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 4, "type": 0, "shape": 0, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 5, "type": 0, "shape": 0, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 6, "type": 0, "shape": 0, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 7, "type": 0, "shape": 1, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 8, "type": 0, "shape": 1, 'radarmode': 1, "points":[]},
+        {"enabled": 0, "narea": 9, "type": 0, "shape": 1, 'radarmode': 1, "points":[]}
     ]
 }
 
@@ -53,7 +58,7 @@ if config:
         pollTime = config.get('poll_time')
         save_config('config.json',config)
     pollTime = int(pollTime)
-       
+    
     radarvel = config.get('serial_speed')
     if not radarvel:
         config.update({"serial_speed": 9600})
@@ -70,68 +75,76 @@ else:
     print("DEFAULT radar_config: ", default_config)
     
 radaregions = config.get('regions', default_config)
+print('radaregions: ', radaregions)
+if len(radaregions) < 9:
+    config['regions'] = default_config['regions']
+    save_config('config.json', default_config)
+    radaregions = config.get('regions', default_config)
+    
 #test_speeds = [9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800]
 #for speed in test_speeds:
-#radarvel = 115200 # CAMBIA QUESTA VELOCITA'. Quando hai trovato la imposti nella pagina e poi commenti la riga
+#radarvel = 256000 # CAMBIA QUESTA VELOCITA'. Quando hai trovato la imposti nella pagina e poi commenti la riga
 S_ON.value(1)
 time.sleep(0.5)
-lista_x = []
-lista_y = []
+lista_x = [0, 0, 0, 0, 0]
+lista_y = [0, 0, 0, 0, 0]
 lista_n = []
+lastlen = 0
 
 print('Baud rate', radarvel)
-def my_callback(code, val, len):
+def my_callback(code, val, length):
     global lista_x
     global lista_y
+    global lista_n
+    global lastlen
     global filter_x
     global filter_y
-    global lista_n
     
-    newlen = 0
-    #print('Len: ', len)
+    #print('len ', length)
     if code == 0x06:
         print('Callback get_regions!')
         pubStateAtt("regions", val)
     elif code == 0x07:
+        #print(f'length: {length}')
         #print('Callback get_coordinates!')
-        mode = radar.get_stateFromRAM()
-        if mode != 2:
-            if filter_x.getNumSensors() != len:                
-                filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-                filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-            lista_x = filter_x.update(val.get('lista_x', []), ['emafilter']).get('emafilter')
-            lista_y = filter_y.update(val.get('lista_y', []), ['emafilter']).get('emafilter')
+        if S_ON.value():
+            if lastlen != length:
+                print('Cambio dimensione coordinate')
+                filter_x = MovingStatistics(window_size=10, num_sensors=length, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+                filter_y = MovingStatistics(window_size=10, num_sensors=length, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+            else:
+                # calcola la media delle coordinate
+                lista_x = filter_x.update(val.get('lista_x', []), ['emafilter']).get('emafilter')
+                lista_y = filter_y.update(val.get('lista_y', []), ['emafilter']).get('emafilter')
+                #lista_n = val.get('ntarget', [])
+                lista_n = radar.get_ntargetsFromRAM()
+            lastlen = length
+            #print(f'lista_n: {lista_n}')
+        else:
+            lista_x = [0] * length
+            lista_y = [0] * length
     elif code == 0x08:
-        #print('Callback get_num_targets! ', val )
-        mode = radar.get_stateFromRAM()
-        if mode != 1:
-            lista_n = val             
-    elif code == 0x03:
-        print('Callback get_reporting type!')
-        pubStateAtt("radarmode", val)
-    elif code == 0x02:
-        mode = radar.get_stateFromRAM()
-        print(f'Radar set mode feedback: {mode}')
-        if mode == 1:
-            lista_n = []
-        elif mode == 2:
-            lista_x = []
-            lista_y = []
-            filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-            filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)        
-        pubStateAtt("radarmode", mode)
+        pass
+        #print('Callback get_num_targets!')
+        lista_n = radar.get_ntargetsFromRAM()
+        #pubStateAtt("ntargets", val)
     elif code == 0x09:
         print('Callback get_FW!')
         pubStateAtt("fw", val)
+        radar.get_reporting()
+
     elif code == 0x0A:
-        print('Callback set radar_factory!')
         if val:
+            print('Callback scrivi_radarFactory!')
             pubStateAtt("radarfactory", val)
-    elif code == 0x01:
-        print('Callback set baudrate!')
-        scrivi_servel(val)
-        pubStateAtt("servel", val)
-        
+    elif code == 0x03:
+        print('Callback get_reporting type!')
+        pubStateAtt("radarmode", val)
+        self.get_regions()
+    
+    #time.sleep(0.1)
+    
+print('serial speed: ', radarvel)     
 radar = LD2461(17, 18, radarvel, my_callback)    
 # Sensor configuration
 print("Configuring sensor...")
@@ -141,54 +154,56 @@ i2c = SoftI2C(scl=Pin(14),sda=Pin(13))
 print('Scan i2c bus...')
 devices = i2c.scan()
 bme = BME680_I2C(i2c=i2c, address=0x76)
-time.sleep(1)
-radar.read_all_info(radaregions)# sovra
-time.sleep(0.1)
+radar.load_regions(radaregions)
+radar.read_all_info()
 
 # Partial JSON of the single states that are retrieved in PULL mode from the web interface
 # upon receipt of a status request command
 def pubStateAtt(att, val):
-     timestamp = getTimestamp()
-     message = ujson.dumps(
-        {
-            "state": {
-                att: val,
-            },
-            "boardID": esp32_unique_id,
-            "timestamp": timestamp,
-        }
-     )
-     print(f"Reporting to MQTT topic {MQTT_STATETOPIC}: {message}")
-     client.publish(MQTT_STATETOPIC, message)
+    timestamp = getTimestamp()
     
-def getAllState():
-     radar.get_reporting()
-     time.sleep(0.05)
-     radar.get_version()
-     time.sleep(0.05)
-     radar.get_regions()
-     time.sleep(0.05)
+    # Utilizzo di OrderedDict per definire l'ordine dei campi
+    from collections import OrderedDict
+    message_dict = OrderedDict([
+        ("boardID", esp32_unique_id),
+        ("timestamp", timestamp),
+        ("state", OrderedDict([
+            (att, val)
+        ]))
+    ])
+    
+    message = ujson.dumps(message_dict)
+    print(f"Reporting to MQTT topic {MQTT_STATETOPIC}: {message}")
+    client.publish(MQTT_STATETOPIC, message)
      
-     timestamp = getTimestamp()
-     polltimeval = pollTime
-     rstate = "on" if S_ON.value() else "off"
-     message = ujson.dumps(
-        {
-            "state": {
-                #"fw": fwval,
-                "servel": radarvel,
-                "polltime": polltimeval,
-                "radarstate": rstate,
-                #"radarmode": reportype,
-                "radarfactory": 1,
-                #"regions": regions,
-            },
-            "boardID": esp32_unique_id,
-            "timestamp": timestamp,
-        }
-     )
-     print(f"Reporting AllState to MQTT topic {MQTT_STATETOPIC}: {message}")
-     client.publish(MQTT_STATETOPIC, message)
+def pubAllState():
+    global S_ON
+    
+    timestamp = getTimestamp()
+    polltimeval = pollTime
+    fwval = radar.get_versionFromRAM()
+    rstate = "on" if S_ON.value() else "off"
+    reportype = radar.get_stateFromRAM()
+    regions = radar.get_regionsFromRAM()
+    
+    # Utilizzo di OrderedDict per definire l'ordine dei campi
+    from collections import OrderedDict
+    message_dict = OrderedDict([
+        ("boardID", esp32_unique_id),
+        ("timestamp", timestamp),
+        ("state", OrderedDict([
+            ("fw", fwval),
+            ("servel", radarvel),
+            ("polltime", polltimeval),
+            ("radarfactory", 1),
+            ("regions", regions)
+        ]))
+    ])
+    
+    message = ujson.dumps(message_dict)
+    
+    print(f"Reporting to MQTT topic {MQTT_STATETOPIC}: {message}")
+    client.publish(MQTT_STATETOPIC, message)
 
 # Callback function to manage incoming messages
 def sub_cb(topic, msg):
@@ -205,26 +220,15 @@ def sub_cb(topic, msg):
     except ValueError as e:
         print("Errore di decodifica JSON:", e)
 
-def readFW():
-    global radar
-    data = None
-    data = radar.get_versionFromRAM()
-    return data    
-        
-def setBaudRate(rate):
-   radar.set_baud_rate(int(rate))
-       
+             
 def scrivi_radarToggle(val):
+    global S_ON
+    
     if S_ON.value():
         S_ON.value(0)
     else:
         S_ON.value(1)
     leggi_radarState()
-    lista_x = []
-    lista_y = []
-    lista_n = []
-    filter_x = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-    filter_y = MovingStatistics(window_size=10, num_sensors=len, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)        
 # Funzioni di comando
 
 def scrivi_pollTime(valore):
@@ -239,50 +243,78 @@ def scrivi_servel(valore):
     print(f"Scrivi servel a {valore}")
     config['serial_speed'] = radarvel
     save_config('config.json', config)  
-    #setBaudRate(radarvel)
+    radar.set_baud_rate(radarvel)
+    pubStateAtt("servel", radarvel)
 
 def scrivi_radarMode(valore):
+    global config
     print(f"Scrivi radarMode a {valore}")
-    radar.set_reporting(int(valore))
-
-def scrivi_radarFactory(valore):
+    r = radar.set_reporting(valore)
+    config['regions'] = r
+    save_config('config.json', config)
+    leggi_radarMode() #mi serve il feedback, set_reporting() non è bloccante!
+    #leggi_regioni()
+    
+def scrivi_radarFactory(valore):   
+    global config
     print(f"Scrivi radarFactory a {valore}")
     radar.restore_factory()
-    radarvel = 9600
     config = default_config
     save_config('config.json', config)
+    #art.init(radarvel, bits=8, parity=None, stop=1)
+    pubStateAtt("radarfactory", "")
 
-def disable_region(area): #0x02
+def scrivi_tipo_area(val):
+    global config
+    print(f"Scrivi_tipo_area a {val}")
+    r = radar.set_filtermode_region(val)
+    config['regions'] = r
+    save_config('config.json', config)
+    leggi_regioni()
+    
+def disable_region(area): #0x02   
+    print("Disabilita regione: ", area)
+    global config
     r = radar.disable_region(area)
     config['regions'] = r
     save_config('config.json', config)
     leggi_regioni()
     
 def disable_all_region(): #0x02
+    global config
     r = radar.disable_all_regions()
     config['regions'] = r
     save_config('config.json', config)
     leggi_regioni()
 
-def delete_all_regions(val):    
-     r = radar.delete_all_regions()# imposta le regioni di default nel dispositivo
-     save_config('config.json', config)# imposta le regioni di default nella MCU 
-     leggi_regioni()
+def delete_all_regions(val):
+    global config
+    radar.delete_all_regions()
+    r = radar.delete_all_regions()# imposta le regioni di default nel dispositivo
+    save_config('config.json', config)# imposta le regioni di default nella MCU
+    leggi_regioni()
      
-def enable_region(area): #0x02
+def enable_region(area): #0x02   
+    global config
+    print("Abilita regione: ", area)
     r = radar.enable_region(area)# restituisce TUTTE le regioni sul dispositivo
+    print("Salva regione")
     config['regions'] = r
     save_config('config.json', config)# sincronizza le regioni sulla MCU con quelle MODIFICATE sul dispositivo
+    print("Leggi regioni")
     leggi_regioni()
 
-def scrivi_regioni(val):
-    print("Scrivi regioni")
+def scrivi_regione(val):   
+    global config
+    print("Scrivi regioni: ", val)
     val2 = radar.set_region(val)# restituisce TUTTE le regioni sul dispositivo
     config['regions'] = val2
     save_config('config.json', config)# sincronizza le regioni sulla MCU con quelle MODIFICATE sul dispositivo
     leggi_regioni()
+    #leggi_regioni() lo fa la callback!!!
 # FEEDBACKS ---------------------------------------------------------------------------------------------------
 def leggi_radarState():
+    global S_ON
     print("Leggi radarstate")
     pubStateAtt("radarstate", "on" if S_ON.value() else "off")
     
@@ -294,8 +326,7 @@ def leggi_regioni():
 def leggi_radarfw():
     global radarFW
     print("Leggi radarfw")
-    val = readFW()
-    pubStateAtt("fw", val)
+    radar.get_version()
 
 def leggi_servel():
     global radarvel
@@ -311,7 +342,6 @@ def leggi_radarMode():
     print("Leggi radarMode")
     val = radar.get_stateFromRAM()
     pubStateAtt("radarmode", val)
-    
    
 # Map of the functions to be executed on a certain path of the received commands (statuses).
 # They must coincide with the corresponding paths of the JSON object being transmitted.
@@ -332,23 +362,24 @@ command_map = {
     "config": {
         "write": {# commands whose reception causes a configuration action on the system
             "polltime": scrivi_pollTime,
-            "servel": setBaudRate,
-            "radarmode": scrivi_radarMode,
+            "servel": scrivi_servel,
             "radarfactory": scrivi_radarFactory,
             "radartoggle": scrivi_radarToggle,
             "areaenable": enable_region,
             "areadisable": disable_region,
             "areareset": delete_all_regions,
-            "region": scrivi_regioni,
+            "region": scrivi_regione,
+            "areatype": scrivi_tipo_area,
+            "radarmode": scrivi_radarMode,
         },
         "read": {# commands whose reception causes the sending of a system status
             "radarfw": leggi_radarfw,
             "servel": leggi_servel,
             "polltime": leggi_pollTime,
-            "radarmode": leggi_radarMode,
-            "allstate": getAllState,
+            "allstate": pubAllState,
             "radarstate": leggi_radarState,
             "regions": leggi_regioni,
+            "radarmode": leggi_radarMode,
         }
     }
 }
@@ -376,14 +407,11 @@ gas = bme.gas
 t1 =DiffTimer()
 t2 =DiffTimer2()
 t3 =DiffTimer2()
-t4 =DiffTimer2()
 t1.start()
 t2.setBase(500)
 t2.start()
 t3.setBase(500)
 t3.start()
-#t4.setBase(500)
-#t4.stop()
 
 sensor = LTR329(i2c)
 ch0, ch1, lux_ch0, lux_ch1, total_lux = sensor.get_lux()
@@ -396,20 +424,20 @@ print("Lux totale:", total_lux, "lux")
 # Costante di smoothing per la media esponenziale pesata (0 < alpha <= 1)
 alpha = 0.125
 beta = 0.25
-#pollTime = 2000
+pollTime = 2000
 
 while not ok:
-    try:
+    #try:
         # WiFi configuration
-        print(f"Connecting to WiFi...", end="")
-        #(ip, wlan_mac, sta_if) = wifi_connect(WIFI_SSID1, WIFI_PASSWORD1)
-        (ip, wlan_mac, sta_if) = wifi_connect2(WIFI_SSID1, WIFI_PASSWORD1, WIFI_SSID2, WIFI_PASSWORD2)
+    (ip, wlan_mac, sta_if) = wifi_connect2(WIFI_SSID1, WIFI_PASSWORD1, WIFI_SSID2, WIFI_PASSWORD2)
+    try:    
         print(" Connected!")
         print(f"ip: {ip}, mac: {bin2hex(wlan_mac)}")
         esp32_unique_id = MQTT_CLIENT_ID + bin2hex(wlan_mac)
         # MQTT init
         #MQTT_CLIENT_ID_RND = MQTT_CLIENT_ID + random_string()
         MY_MQTT_CLIENT_ID = MQTT_CLIENT_ID + str(bin2hex(wlan_mac))#+":"+ random_string()
+        print(f"mqtt_id: {MY_MQTT_CLIENT_ID}")
         client1 = MQTTClient(MY_MQTT_CLIENT_ID, MQTT_BROKER1, user=MQTT_USER, password=MQTT_PASSWORD)
         client2 = MQTTClient(MY_MQTT_CLIENT_ID, MQTT_BROKER2, user=MQTT_USER, password=MQTT_PASSWORD)
         # Imposta la funzione di callback per la sottoscrizione
@@ -424,10 +452,11 @@ while not ok:
         print("NTP connected.")
         ok = True
     except OSError as e:
-        print(e)
+        print("Errore", e)
         i += 1
         time.sleep(i)
 
+time.sleep(1)
 # Prova a connettersi al primo broker
 print("Connecting to primary broker...")
 client = client1
@@ -440,7 +469,8 @@ time.sleep(0.5)
 #ema = MovingStatistics(window_size=10, num_sensors=3, alpha=0.125)
 filter_x = MovingStatistics(window_size=10, num_sensors=5, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
 filter_y = MovingStatistics(window_size=10, num_sensors=5, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
-#radar.read_all_info(config)
+print("Calling FW")
+radar.read_all_info()
 
 while True:
     radar.loop()
@@ -466,7 +496,8 @@ while True:
             if t2.update() >= pollTime:
                 #print('Time: ',t2.peek())
                 t2.reset()
-                print('Acceso',S_ON.value())
+                #print('Acceso',S_ON.value())
+                print(f'lista_n: {lista_n}')
                 
                 if not sta_if.isconnected():
                     (ip, wlan_mac, sta_if) = wifi_connect(WIFI_SSID, WIFI_PASSWORD)
@@ -500,41 +531,45 @@ while True:
                 timestamp = getTimestamp()
                 
                 # Json of the measurements sent in push mode to the MQTT broker
+                from collections import OrderedDict
+
                 message = ujson.dumps(
-                    {
-                        "measures":{
-                            "tempSensor": {
-                                "temp": temp,
-                                "press": press,
-                                "hum": hum,
-                                "gas": gas,
-                            },
-                            "luxSensor": {
-                                "visible": visible,
-                                "infrared": infrared,
-                                "total": total,
-                            },
-                            "radar": {
-                                "x": round_2(lista_x),
-                                "y": round_2(lista_y),
-                                "n": lista_n,
-                            },
-                        },
-                        "boardID": esp32_unique_id,
-                        "timestamp": timestamp,
-                    }   
+                    OrderedDict([
+                        ("boardID", esp32_unique_id),
+                        ("timestamp", timestamp),
+                        ("measures", OrderedDict([
+                            ("tempSensor", OrderedDict([
+                                ("temp", temp),
+                                ("press", press),
+                                ("hum", hum),
+                                ("gas", gas)
+                            ])),
+                            ("luxSensor", OrderedDict([
+                                ("visible", visible),
+                                ("infrared", infrared),
+                                ("total", total)
+                            ])),
+                            ("radar", OrderedDict([
+                                ("x", round_2(lista_x)),
+                                ("y", round_2(lista_y)),
+                                ("n", lista_n)
+                            ]))
+                        ]))
+                    ])
                 )
-               
+
                 print(f"Reporting to MQTT topic {MQTT_PUSHTOPIC}: {message}")
                 # mqtt message publishing
-                client.publish(MQTT_PUSHTOPIC, message)                             
+                client.publish(MQTT_PUSHTOPIC, message)                         
                 #S_ON.value(0)
-        """
-        if t4.update() > 1000:
-            print("Riacceso radar")
-            t2.stop()
-            S_ON.value(1)
-        """
+        elif t2.peek() == 1500:
+                pass
+                #S_ON.value(1)
+                #time.sleep(0.5)
+                #print('Accendo radar')
+         
+        filter_x = MovingStatistics(window_size=10, num_sensors=lastlen, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
+        filter_y = MovingStatistics(window_size=10, num_sensors=lastlen, alpha=0.125, quantile=0.5, quantile_low=0.25, quantile_high=0.75)
     except ValueError as ve:
         print(ve)
     except OSError as e:
