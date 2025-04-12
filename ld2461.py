@@ -270,7 +270,9 @@ class LD2461:
                             result['lista_x'][j] = 0
                             result['lista_y'][j] = 0
                             #print(f"0.5-test:")     
-            
+                        elif self._regions[i]["radarmode"] == 1:
+                            self.ntargets[i] = 0
+                        
             #self.ntargets = nt
             #print("ntargets coord: ", self.ntargets)
             result['ntarget'] = self.ntargets;
