@@ -61,6 +61,7 @@ if config:
     
     radarvel = config.get('serial_speed')
     if not radarvel:
+        print('radarvel non trovato, metto default: ', 9600)
         config.update({"serial_speed": 9600})
         radarvel = config.get('serial_speed')
         save_config('config.json',config)
@@ -154,8 +155,8 @@ i2c = SoftI2C(scl=Pin(14),sda=Pin(13))
 print('Scan i2c bus...')
 devices = i2c.scan()
 bme = BME680_I2C(i2c=i2c, address=0x76)
-radar.load_regions(radaregions)
-radar.read_all_info()
+#radar.load_regions(radaregions)
+#radar.read_all_info()
 
 # Partial JSON of the single states that are retrieved in PULL mode from the web interface
 # upon receipt of a status request command
@@ -259,7 +260,7 @@ def scrivi_radarFactory(valore):
     global config
     print(f"Scrivi radarFactory a {valore}")
     radar.restore_factory()
-    config = default_config
+    #config = default_config
     save_config('config.json', config)
     #art.init(radarvel, bits=8, parity=None, stop=1)
     pubStateAtt("radarfactory", "")
