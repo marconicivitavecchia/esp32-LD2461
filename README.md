@@ -5,7 +5,8 @@ For the first boot from a device, please set manually the serial speed in config
 
 The following is an example of a complete config.json file:
 ```Json
-{"poll_time": 2000, "serial_speed": 9600, "regions": [{"x1": 10, "x0": 10, "x3": 10, "x2": 30, "enabled": 1, "narea": 1, "type": 0, "y0": 40, "y1": 20, "y2": 20, "y3": 20}, {"x1": 49, "x0": 49, "x3": 49, "x2": 78, "enabled": 1, "narea": 2, "type": 0, "y0": 39, "y1": 21, "y2": 21, "y3": 21}, {"x1": -47, "x0": -47, "x3": -47, "x2": -8, "enabled": 0, "narea": 3, "type": 1, "y0": 40, "y1": 25, "y2": 25, "y3": 25}]}
+{"poll_time": 2000, "serial_speed": 256000, "regions": [{"enabled": 0, "narea": 1, "points": [], "shape": 0, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 2, "points": [], "shape": 0, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 3, "points": [], "shape": 0, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 4, "points": [], "shape": 0, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 5, "points": [], "shape": 0, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 6, "points": [], "shape": 0, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 7, "points": [], "shape": 1, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 8, "points": [], "shape": 1, "radarmode": 1, "type": 0}, {"enabled": 0, "narea": 9, "points": [], "shape": 1, "radarmode": 1, "type": 0}]}
+
 ```
 
 If you are interested in designing the JSON message parser or managing MQTT messages in a similar project see https://github.com/marconicivitavecchia/esp32-radar/tree/main
