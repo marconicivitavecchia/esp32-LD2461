@@ -224,14 +224,10 @@ class LD2461:
                 datalen = 5
             datalen = int(datalen)
             
-            xx = []
-            yy = []
             for i in range(datalen):  
                 base_index = i * 2 + offset # Calcola l'indice base per ogni gruppo di 2 byte
-                a = self.from_signed_byte(frame_data[base_index]) / 10
-                b = self.from_signed_byte(frame_data[base_index + 1]) / 10
-                xx.append(a)
-                yy.append(b)
+                result['lista_x'].append(self.from_signed_byte(frame_data[base_index]) / 10)
+                result['lista_y'].append(self.from_signed_byte(frame_data[base_index + 1]) / 10)
         except IndexError as e:
             print(f"Process_coordinates 1: {e}")
             return False
@@ -247,8 +243,8 @@ class LD2461:
                 # nt.append(0)
                 #print(f"0-datalen: {datalen}")
                 for j in range(datalen):
-                    px = xx[j]
-                    py = yy[j]
+                    px = result['lista_x'][j]
+                    py = result['lista_y'][j]
                     
                     if self._regions[i]['shape'] == 0 and (px!=0 or py!=0):# se le regioni non sono rettangolari e se j non è sullo zero
                         #print(f"0.1-test:")
@@ -259,8 +255,8 @@ class LD2461:
                             #print(f'1-accendi: {i} - { nt[i]}')  
                         if (inside and self._regions[i]['type']==1 or self._regions[i]['type']==2 and (not inside)) and self._regions[i]['enabled']==1:
                             # se j sta dentro una regione di filtro abile o sta fuori di una regione croppata abile, allora 
-                            xx[j] = 0 # cancella j, 
-                            yy[j] = 0
+                            result['lista_x'][j] = 0 # cancella j, 
+                            result['lista_y'][j] = 0
                             self.ntargets[i] = 0                # spegni la regione,
                             #print(f'2-spegni: {i} - { nt[i]}')
                             suppressed[j] = 1        # sopprimi j
@@ -270,9 +266,9 @@ class LD2461:
                             if inside  and suppressed[j]:# se contiene il soppresso j, allora spegni la regione di qualunque tipo essa sia
                                 self.ntargets[k] = 0
                                 #print(f'3-contiene soppressi: {i} - { nt[i]}')
-                        if self.state[j] == 2:
-                            xx[j] = 0
-                            yy[j] = 0
+                        if self.state[i] == 2:
+                            result['lista_x'][j] = 0
+                            result['lista_y'][j] = 0
                             #print(f"0.5-test:")     
             
             #self.ntargets = nt
