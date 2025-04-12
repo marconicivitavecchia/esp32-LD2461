@@ -278,9 +278,7 @@ class LD2461:
             result['ntarget'] = self.ntargets;
                 
             #print("state: ", self.state)
-            result['lista_x'] = xx
-            result['lista_y'] = yy
-            
+ 
             self.callback(GET_COORDINATES, result, datalen)
             return result
         except IndexError as e:
